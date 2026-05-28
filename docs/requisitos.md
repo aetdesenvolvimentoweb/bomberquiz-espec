@@ -18,7 +18,7 @@ O sistema tem duas frentes:
   - Trimestral
   - Semestral
   - Anual
-- **Assinaturas doadas:** administradores podem conceder assinatura gratuita a qualquer usuário por período arbitrário (ver "Doação de assinatura"). É o mecanismo usado para remunerar parceiros pelo trabalho de cadastro e também para uso promocional/marketing.
+- **Cortesia de assinatura:** administradores podem conceder assinatura gratuita a qualquer usuário por período arbitrário (ver "Cortesia de assinatura"). É o mecanismo usado para remunerar parceiros pelo trabalho de cadastro e também para uso promocional/demonstração.
 - **Parceria por contrapartida:** parceiros recebem assinatura doada em troca de cadastro de questões. _A definir: regras de equivalência (quantas questões = quanto tempo de assinatura), critérios de aprovação das questões cadastradas._
 
 ## Atores (papéis)
@@ -28,7 +28,7 @@ O sistema tem duas frentes:
 - Controle de acesso via **whitelist de e-mails** mantida em configuração (não autoatribuição). Quando um usuário whitelist faz login pela primeira vez, é promovido a administrador automaticamente. Ver ADR-0005.
 - Cadastra perguntas e respostas (sem restrição de matéria).
 - Cadastra **Eixos Temáticos** e **Matérias** (CRUD completo).
-- **Doa assinaturas** a usuários (clientes ou parceiros) — período arbitrário, com motivo registrado. Ver "Doação de assinatura" abaixo.
+- **Concede cortesia de assinatura** a usuários (clientes ou parceiros) — período arbitrário, com categoria registrada. Ver "Cortesia de assinatura" abaixo.
 - Gerencia parceiros (promove cliente a parceiro; revoga o papel).
 - Acessa o painel administrativo-financeiro:
   - Estatísticas por pergunta (nível de dificuldade derivado de erros/acertos acumulados).
@@ -73,21 +73,22 @@ Todos os papéis (Administrador, Cliente, Parceiro) compartilham o mesmo cadastr
 - **Recuperação de senha:** via e-mail e/ou WhatsApp (a decidir o canal padrão).
 - **Verificação de identidade:** mínimo é verificar o e-mail no cadastro. Verificação de WhatsApp pode vir em etapa posterior, especialmente se for usada para recuperação de senha.
 
-## Doação de assinatura
+## Cortesia de assinatura
 
-Funcionalidade administrativa de primeira classe (não um workaround). Permite a um administrador conceder assinatura gratuita a um usuário existente.
+Funcionalidade administrativa de primeira classe (não um workaround). Permite a um administrador conceder assinatura gratuita a um usuário existente. Termo escolhido: "cortesia" (conotação comercial neutra; substituiu "doação" para evitar conotação de caridade e implicações fiscais inadequadas).
 
-**Campos de uma doação:**
+**Campos de uma cortesia:**
 - Usuário beneficiário (busca por e-mail).
-- Período concedido (em dias, ou data de início + data de fim).
-- Motivo / categoria (ex: `parceria-cadastro-conteudo`, `marketing`, `cortesia`, `compensacao`). Campo obrigatório para auditoria e relatórios.
+- Período concedido (em dias).
+- Categoria: `parceria` (remunerar trabalho de cadastro de conteúdo) ou `demonstracao` (uso promocional/divulgação). Campo obrigatório para auditoria e relatórios.
+- Notas opcionais (até 500 caracteres).
 - Administrador que concedeu (registrado automaticamente).
 - Data da concessão (automática).
 
 **Regras:**
-- Doações são acumuláveis: se o usuário já tem assinatura ativa (paga ou doada), o período da doação **estende** a data de expiração atual.
-- Doações aparecem no painel financeiro **separadas** das receitas (não contam como receita; contam como custo de aquisição/parceria, conforme o motivo).
-- Administrador pode **revogar** uma doação ainda não totalmente consumida? _A definir._
+- Cortesias são acumuláveis: se o usuário já tem assinatura ativa (paga ou cortesia), o período da nova cortesia **estende** a data de expiração atual.
+- Cortesias aparecem no painel financeiro **separadas** das receitas (não contam como receita; contam como custo de aquisição/parceria conforme a categoria).
+- Administrador **pode revogar** uma cortesia ainda não totalmente consumida (motivo obrigatório). Encerra a parte futura, preserva o consumido. Limite de 10 cortesias/mês civil por admin. Detalhes em SUB-RF-008/010.
 
 ## Domínio: estrutura dos conteúdos do TAP
 
@@ -145,7 +146,7 @@ Organizados em **6 módulos**, cada um em arquivo próprio sob `docs/rf/`. Ident
 | 3 | Conteúdo (admin) — eixos, matérias, perguntas | [`rf/content-admin.md`](rf/content-admin.md) | ✅ Rascunho |
 | 4 | Conteúdo (parceiro) | [`rf/content-partner.md`](rf/content-partner.md) | ✅ Rascunho |
 | 5 | Quiz (cliente) | [`rf/quiz.md`](rf/quiz.md) | ✅ Rascunho |
-| 6 | Assinaturas e doações | `rf/subscriptions.md` | ⏳ Pendente |
+| 6 | Assinaturas e cortesias | [`rf/subscriptions.md`](rf/subscriptions.md) | ✅ Rascunho |
 
 Pendências por módulo (decisões a tomar antes da implementação) ficam no rodapé de cada arquivo, identificadas como `<MODULO>-P-NN`.
 
@@ -229,7 +230,7 @@ Pendências por módulo (decisões a tomar antes da implementação) ficam no ro
 ### Resolvidas (mantidas aqui para referência histórica até virarem RF)
 - ✅ Política de **exclusão** de questões pelo parceiro → só as próprias.
 - ✅ Múltiplos administradores → sim, máximo 5 via whitelist (ADR-0005).
-- ✅ Mecânica para parceiro receber assinatura → doação de assinatura (funcionalidade administrativa).
+- ✅ Mecânica para parceiro receber assinatura → cortesia de assinatura (funcionalidade administrativa).
 - ✅ Tipo de aplicação → PWA web mobile-first (ADR-0010).
 - ✅ Forma de armazenamento → Postgres no Neon, via Drizzle (ADR-0009).
 - ✅ Gateway de pagamento → Mercado Pago (ADR-0012).
@@ -251,10 +252,13 @@ Pendências por módulo (decisões a tomar antes da implementação) ficam no ro
 - ✅ Reset de estatísticas pelo cliente → sim, total, com reautenticação e confirmação; preserva histórico de quizzes. QUIZ-RF-008.
 - ✅ Comportamento de quiz abandonado vs. finalizado/expirado → assimetria intencional: `finished`/`expired` contam não-respondidas como erro; `abandoned` preserva apenas o que foi efetivamente respondido. Auto-abandono após 24h sem atividade. QUIZ-RF-001 CA-6 / QUIZ-RF-004 CA-4.
 - ✅ Evolução temporal do desempenho próprio → endpoint mensal (`/me/performance/timeline`), sem leaderboard entre clientes. QUIZ-RF-010.
+- ✅ Duração do período gratuito → **7 dias** corridos a partir da verificação de e-mail. Único por usuário. SUB-RF-002.
+- ✅ Meios de cobrança no MVP → PIX, saldo Mercado Pago (mesmo preço base) e cartão de crédito (preço +10%, parcelável em até 3×). Sem recorrência automática (cliente renova manualmente após e-mail de lembrete D-7/D-3/D-1). SUB-RF-001, SUB-RF-003, SUB-RF-007.
+- ✅ Cortesia de assinatura: revogação e limites → admin pode revogar cortesia não consumida (com motivo obrigatório); limite de **10 cortesias/mês civil por admin**. SUB-RF-008/010. Termo "doação" foi renomeado para "cortesia" em toda a documentação.
+- ✅ Equivalência "questões cadastradas ↔ tempo de assinatura" → **sem regra automática no MVP** — admin observa o trabalho e doa manualmente. SUB-P-02.
 
 ### Em aberto
-- (Sem itens pendentes além dos restantes do Módulo 6 — assinaturas e doações.)
+- (Vazio — todos os módulos do MVP cobertos. Pendências individuais por módulo estão nos arquivos `rf/*.md`.)
 - **Reset de estatísticas pelo cliente** (Módulo 5): cliente pode zerar o próprio histórico?
 - Duração do período gratuito (Módulo 6).
 - Equivalência "questões cadastradas ↔ tempo de assinatura" para parceiros (Módulo 6).
-- **Doação de assinatura** (Módulo 6): admin pode revogar uma doação não consumida? Existe limite por admin/mês?

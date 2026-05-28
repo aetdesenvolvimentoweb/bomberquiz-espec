@@ -47,11 +47,13 @@ Formato:
 **Decisão:** O conjunto de administradores é definido por uma **whitelist de e-mails na configuração da aplicação** (não em UI de admin). Quando um e-mail whitelist faz seu primeiro login, o sistema o promove a Administrador automaticamente. Adicionar/remover admin exige alterar a configuração e fazer deploy/reload — não há UI.
 **Consequências:** Simples, seguro, sem necessidade de tela de "gerenciar administradores". Limita escalabilidade da equipe administrativa, mas isso é desejável no momento. Se no futuro a equipe crescer (>5), reavaliar para um modelo de admin-promove-admin com auditoria.
 
-## 0006 — Doação de assinatura como funcionalidade de primeira classe (2026-05-28)
+## 0006 — Cortesia de assinatura como funcionalidade de primeira classe (2026-05-28)
 
-**Contexto:** Parceiros recebem acesso gratuito em troca de cadastro de conteúdo. Em vez de criar um "tipo de assinatura de parceiro" ou hardcodar a contrapartida, queremos um mecanismo genérico.
-**Decisão:** Existe a funcionalidade **"Doar assinatura"** disponível ao Administrador. Doação tem beneficiário, período, motivo (categoria) e admin concedente registrados. Acumula sobre assinatura paga existente. Aparece no painel financeiro **separada** de receitas.
-**Consequências:** Mesmo mecanismo atende parceria, marketing, cortesia e compensação — sem código duplicado. Exige campo "motivo" obrigatório para que relatórios financeiros distingam os usos. Doações também precisam contar para métricas (ex.: "X assinaturas doadas via parceria este mês").
+> **Renomeação aplicada em 2026-05-28:** "doação" → "cortesia". Cliente preferiu "cortesia" pela conotação comercial neutra; "doação" pode soar como caridade ou trazer implicações fiscais indesejadas. Schema renomeado para `courtesies`, `source=courtesy`, `courtesy_id`.
+
+**Contexto:** Parceiros recebem acesso gratuito em troca de cadastro de conteúdo. O admin também precisa conceder acesso gratuito em ações promocionais (demonstração). Em vez de criar um "tipo de assinatura de parceiro" ou hardcodar a contrapartida, queremos um mecanismo genérico.
+**Decisão:** Existe a funcionalidade **"Conceder cortesia"** disponível ao Administrador. Cortesia tem beneficiário, período (dias), categoria (`parceria` ou `demonstracao`) e admin concedente registrados. Acumula sobre assinatura paga existente, estendendo o `end_at`. Aparece no painel financeiro **separada** de receitas. Admin pode revogar cortesia ainda não totalmente consumida.
+**Consequências:** Mesmo mecanismo atende parceria (remunerar quem cadastra conteúdo) e demonstração (marketing/divulgação) — sem código duplicado. Exige campo `category` para que relatórios financeiros distingam os usos. Cortesias contam para métricas (ex.: "X cortesias concedidas via parceria este mês") e nunca como receita. Revogação permite ajuste se a contrapartida do parceiro não se concretizar.
 
 ## 0007 — Cadastro único de usuário; papel é propriedade (2026-05-28)
 
@@ -97,7 +99,7 @@ Formato:
 
 ## 0011 — Arquitetura hexagonal no backend (2026-05-28)
 
-**Contexto:** Domínio razoavelmente rico (usuários, quiz, questões, assinaturas, doações, estatísticas) com múltiplas integrações externas (pagamento, WhatsApp, e-mail, storage). Queremos testabilidade e capacidade de trocar adapters sem reescrever regras de negócio.
+**Contexto:** Domínio razoavelmente rico (usuários, quiz, questões, assinaturas, cortesias, estatísticas) com múltiplas integrações externas (pagamento, WhatsApp, e-mail, storage). Queremos testabilidade e capacidade de trocar adapters sem reescrever regras de negócio.
 **Decisão:** Estrutura em quatro camadas:
 - `domain/` — entidades e regras de negócio puras, sem dependências externas.
 - `application/` — use cases / serviços que orquestram domínio e portas (interfaces).
@@ -106,7 +108,7 @@ Formato:
 
 A direção de dependência é sempre de fora para dentro: `http → application → domain`; `infra` implementa portas definidas em `domain` ou `application`. Detalhes em `docs/arquitetura.md`.
 
-**Consequências:** Testes de domínio sem mocks de banco/HTTP. Trocar Drizzle por outro ORM, ou Mercado Pago por outro gateway, é localizado em `infra`. Custo: mais arquivos e indireção do que uma estrutura "rotas + serviços". O porte do projeto justifica o investimento porque há integrações reais e regras de negócio (doação acumulando assinatura, fórmula de nível da pergunta) que merecem isolamento.
+**Consequências:** Testes de domínio sem mocks de banco/HTTP. Trocar Drizzle por outro ORM, ou Mercado Pago por outro gateway, é localizado em `infra`. Custo: mais arquivos e indireção do que uma estrutura "rotas + serviços". O porte do projeto justifica o investimento porque há integrações reais e regras de negócio (cortesia acumulando assinatura, fórmula de nível da pergunta) que merecem isolamento.
 
 ## 0012 — Integrações externas iniciais (2026-05-28)
 
@@ -141,10 +143,10 @@ Todas acessadas via **portas** definidas em `application/` ou `domain/`, impleme
 
 ## 0015 — Saída de conta: desativação reversível + exclusão por anonimização (2026-05-28)
 
-**Contexto:** A LGPD (art. 18, VI) garante ao titular o direito de eliminação dos dados pessoais. Atender literalmente com hard-delete em cascata destruiria o histórico do sistema (questões cadastradas por parceiros, estatísticas, doações financeiras), o que prejudicaria outros usuários e os relatórios financeiros. Por outro lado, simplesmente "desativar" sem remover PII não atende o direito de eliminação.
+**Contexto:** A LGPD (art. 18, VI) garante ao titular o direito de eliminação dos dados pessoais. Atender literalmente com hard-delete em cascata destruiria o histórico do sistema (questões cadastradas por parceiros, estatísticas, cortesias concedidas), o que prejudicaria outros usuários e os relatórios financeiros. Por outro lado, simplesmente "desativar" sem remover PII não atende o direito de eliminação.
 **Decisão:** Oferecer **dois fluxos distintos** ao usuário:
 - **Desativar conta** (PROF-RF-007/008): reversível, preserva 100% dos dados, encerra a sessão e bloqueia logins até reativação. Útil para quem só quer pausar.
-- **Excluir conta** (PROF-RF-009): irreversível, anonimiza as PII em uma única transação — `name` → "Usuário excluído", `email` → `sha256(email)+"@deleted.local"` (preserva unicidade, não roteável, não re-identificável), `phone`/`dob`/`sex`/`avatar_url` → `null`, `password_hash` → `null`, `status` → `deleted`. **Mantém** `users.id` e as FKs apontando para ele (questões cadastradas, doações, estatísticas).
+- **Excluir conta** (PROF-RF-009): irreversível, anonimiza as PII em uma única transação — `name` → "Usuário excluído", `email` → `sha256(email)+"@deleted.local"` (preserva unicidade, não roteável, não re-identificável), `phone`/`dob`/`sex`/`avatar_url` → `null`, `password_hash` → `null`, `status` → `deleted`. **Mantém** `users.id` e as FKs apontando para ele (questões cadastradas, cortesias, estatísticas).
 
 Portabilidade (art. 18, V) **não** é atendida via endpoint no MVP — fica como atendimento sob demanda documentado na política de privacidade. Reavaliar se houver volume.
 **Consequências:** Adere à LGPD sem cascata destrutiva. O preço é (a) UI precisa diferenciar claramente os dois fluxos para o usuário não confundir desativar com excluir, (b) o sufixo `@deleted.local` é não-roteável e qualquer regra de unicidade de e-mail precisa ignorar essa faixa, (c) listagens administrativas precisam filtrar `status != 'deleted'` por padrão para não poluir a UI.

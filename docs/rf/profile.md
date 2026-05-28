@@ -199,7 +199,7 @@ Fluxo de retorno ao sistema após uma desativação. Acessado a partir da respos
 **Pré-condições:** Sessão ativa; conta `active` ou `inactive`.
 
 **Descrição:**
-Atende o direito de eliminação previsto na LGPD (art. 18, VI). É **irreversível**. Anonimiza as PII do usuário **preservando integridade referencial** com questões cadastradas, estatísticas e doações (ADR-0015).
+Atende o direito de eliminação previsto na LGPD (art. 18, VI). É **irreversível**. Anonimiza as PII do usuário **preservando integridade referencial** com questões cadastradas, estatísticas e cortesias (ADR-0015).
 
 **Critérios de aceitação:**
 - **CA-1:** Operação exige reautenticação (senha) **e** marcação explícita do checkbox "Entendo que esta ação é irreversível e anonimizará meus dados".
@@ -212,7 +212,7 @@ Atende o direito de eliminação previsto na LGPD (art. 18, VI). É **irreversí
   - Sessão ativa é encerrada e qualquer token pendente (verificação, recuperação, troca de e-mail) é invalidado.
 - **CA-3:** Avatar no Cloudinary é deletado (best-effort — falha não bloqueia o sucesso da anonimização).
 - **CA-4:** **Questões cadastradas pelo usuário** (caso seja Parceiro/Admin) **permanecem** com `author_id` apontando para o registro anonimizado.
-- **CA-5:** **Doações de assinatura recebidas ou concedidas** permanecem com referência para o registro anonimizado (para integridade do painel financeiro). Assinatura paga vigente é cancelada via gateway no mesmo fluxo (Módulo 6 detalha).
+- **CA-5:** **Cortesias de assinatura recebidas ou concedidas** permanecem com referência para o registro anonimizado (para integridade do painel financeiro). Assinatura paga vigente é cancelada via gateway no mesmo fluxo (Módulo 6 detalha).
 - **CA-6:** Sistema envia e-mail de confirmação **ao endereço original** ("Sua conta foi excluída. Os dados pessoais foram removidos conforme a LGPD.") **antes** da anonimização ser commitada, para garantir entrega ao destinatário real.
 - **CA-7:** Operação não pode ser desfeita. Tentativa de login com o e-mail original retorna mensagem genérica "Conta não encontrada".
 
@@ -273,7 +273,7 @@ Admin promove um Cliente a Parceiro, concedendo acesso à tela de cadastro de pe
 **Critérios de aceitação:**
 - **CA-1:** Admin localiza usuário via PROF-RF-011 e dispara a promoção (`PATCH /admin/users/:id/role`).
 - **CA-2:** Em sucesso, `role` vira `partner`. Entrada no `audit_log`: `{ actor_id, target_id, action: "promote_partner", at }`.
-- **CA-3:** Promoção **não** dispara doação de assinatura automaticamente — é ato separado do admin (Módulo 6).
+- **CA-3:** Promoção **não** dispara cortesia de assinatura automaticamente — é ato separado do admin (Módulo 6).
 - **CA-4:** Tentar promover um usuário que já é `partner` ou `admin` → E-1.
 - **CA-5:** Tentar promover conta `inactive` ou `deleted` → E-2.
 
@@ -311,11 +311,11 @@ Admin reverte um Parceiro para Cliente (perda do direito de cadastrar perguntas)
 **Pré-condições:** Sessão ativa com `role=admin`.
 
 **Descrição:**
-Tela de detalhe acessada a partir da listagem (PROF-RF-011). Reúne, em um único lugar, o contexto que o admin precisa para decidir promoção, revogação ou doação de assinatura.
+Tela de detalhe acessada a partir da listagem (PROF-RF-011). Reúne, em um único lugar, o contexto que o admin precisa para decidir promoção, revogação ou concessão de cortesia de assinatura.
 
 **Critérios de aceitação:**
-- **CA-1:** Endpoint `GET /admin/users/:id` retorna os campos da listagem (PROF-RF-011 CA-2) **mais** um bloco de **resumo financeiro/contrato**: assinatura ativa atual (plano, status, data de expiração), lista cronológica reversa das últimas 5 assinaturas pagas e doadas, total de doações recebidas no ano vigente.
-- **CA-2:** O schema exato do bloco de assinaturas/doações é **definido no Módulo 6** (Assinaturas e doações). Este RF garante apenas que o endpoint existe e que a UI tem o ponto de extensão.
+- **CA-1:** Endpoint `GET /admin/users/:id` retorna os campos da listagem (PROF-RF-011 CA-2) **mais** um bloco de **resumo financeiro/contrato**: assinatura ativa atual (plano, status, data de expiração), lista cronológica reversa das últimas 5 assinaturas (pagas e via cortesia), total de cortesias recebidas no ano vigente.
+- **CA-2:** O schema exato do bloco de assinaturas/cortesias é **definido no Módulo 6** (Assinaturas e cortesias). Este RF garante apenas que o endpoint existe e que a UI tem o ponto de extensão.
 - **CA-3:** **Não** retorna telefone, DOB ou sexo do usuário-alvo (mesma justificativa de PROF-RF-011 CA-2 — admin não precisa para ações de papel/assinatura).
 - **CA-4:** Contas `deleted` retornam HTTP 404 (auditoria sobre conta excluída é via `audit_log`, não por essa rota).
 - **CA-5:** Acesso restrito a `admin` (idêntico a PROF-RF-011).
@@ -329,6 +329,6 @@ Tela de detalhe acessada a partir da listagem (PROF-RF-011). Reúne, em um únic
 ## Pendências deste módulo — resolvidas em 2026-05-28
 
 - ✅ **PROF-P-01 — Retenção de conta desativada.** Decidido: **sem auto-exclusão no MVP**. Conta `inactive` permanece indefinidamente até reativação ou exclusão explícita pelo usuário. Reavaliar se houver volume de contas abandonadas.
-- ✅ **PROF-P-02 — Detalhamento da listagem admin.** Decidido: **incluir no MVP** via PROF-RF-014 (endpoint de detalhe). O schema do bloco de assinaturas/doações é definido no Módulo 6, mas o ponto de extensão fica garantido aqui.
+- ✅ **PROF-P-02 — Detalhamento da listagem admin.** Decidido: **incluir no MVP** via PROF-RF-014 (endpoint de detalhe). O schema do bloco de assinaturas/cortesias é definido no Módulo 6, mas o ponto de extensão fica garantido aqui.
 - ✅ **PROF-P-03 — Cooldown na troca de e-mail.** Decidido: **30 dias** antes de aceitar nova troca + **7 dias** bloqueando exclusão de conta após troca bem-sucedida (anti-takeover). Implementado em PROF-RF-004 CA-7 e PROF-RF-009 E-3.
 - ✅ **PROF-P-04 — Hash do e-mail anonimizado.** Decidido: **SHA-256 com sal global** (`sha256(SALT_GLOBAL + email_normalizado)`). `SALT_GLOBAL` é variável de ambiente protegida. Especificado em regras gerais e em PROF-RF-009 CA-2.

@@ -48,7 +48,7 @@ bomberquiz-api/
 │   │   │   └── user.errors.ts
 │   │   ├── question/
 │   │   ├── quiz/
-│   │   ├── subscription/        # Inclui regra de acúmulo de doação
+│   │   ├── subscription/        # Inclui regra de acúmulo de cortesia
 │   │   └── statistics/          # Fórmula de nível da pergunta
 │   ├── application/             # Use cases (um arquivo por caso de uso)
 │   │   ├── auth/
@@ -190,7 +190,7 @@ bomberquiz-web/
 │   │   ├── auth/                # Login, signup, verify-email, forgot-password
 │   │   ├── quiz/                # Lista, sessão, resultado
 │   │   ├── profile/             # Perfil, estatísticas
-│   │   ├── admin/               # Área admin (questões, doações, financeiro)
+│   │   ├── admin/               # Área admin (questões, cortesias, financeiro)
 │   │   └── partner/             # Área parceiro (suas questões)
 │   ├── features/                # Slices funcionais reutilizáveis
 │   │   ├── quiz/                # Componentes, hooks, queries de quiz

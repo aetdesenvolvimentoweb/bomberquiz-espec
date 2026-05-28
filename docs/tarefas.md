@@ -20,6 +20,8 @@
 - [x] 2026-05-28 — Pendências do Módulo 4 resolvidas: limite de 50 rascunhos confirmado (P-01); notificação ao parceiro via badge no app (`unread_review_events`) + e-mail transacional Resend (P-02), formalizada em CONT-RF-015/016 e PART-RF-007/008; parceiro só vê as próprias perguntas (P-03), divisão de trabalho fica externa ao sistema; rubrica operacional inicial criada em `docs/rubrica-aprovacao.md` (P-04).
 - [x] 2026-05-28 — Módulo 5 (Quiz cliente) — rascunho com QUIZ-RF-001 a QUIZ-RF-009 em `docs/rf/quiz.md`. Decisões: 3 modos no MVP (simulado TAP respeitando `tap_weight`, livre por matéria, livre por eixo); cronômetro opcional com tempo total (3 min/questão default, ajustável 1–5 min); justificativa configurável (após cada / só no final); quiz online-only e efêmero (sem pause/resume); snapshot da pergunta no momento do sorteio para imunidade a edições futuras; reset total de estatísticas pelo cliente preservando histórico de quizzes; bloqueio HTTP 402 quando sem assinatura/trial ativos. 7 pendências identificadas (QUIZ-P-01 a QUIZ-P-07).
 - [x] 2026-05-28 — Pendências do Módulo 5 resolvidas: assimetria explícita de estatísticas (finished/expired contam não-respondidas como erro; abandoned preserva só o que foi respondido) + auto-abandono após 24h sem atividade (QUIZ-P-02); reset seletivo descartado, total mantido (QUIZ-P-03); UI de cronômetro com toggle/switch principal formalizada em QUIZ-RF-001 (QUIZ-P-06); leaderboard descartado em favor de novo QUIZ-RF-010 — evolução temporal própria do usuário (QUIZ-P-07). P-01/04/05 mantidas conscientemente como pós-MVP.
+- [x] 2026-05-28 — Módulo 6 (Assinaturas e cortesias) — rascunho com SUB-RF-001 a SUB-RF-015 em `docs/rf/subscriptions.md`. Decisões: trial automático de 7 dias após verificação de e-mail (único por usuário); 4 planos (mensal/trimestral/semestral/anual) configuráveis pelo admin; cobrança via PIX, saldo MP e cartão (cartão +10%, parcelável em até 3×); sem recorrência automática no MVP — TAP é cíclico, lembretes D-7/D-3/D-1 + e-mail final no D-0; cortesia (renomeado de "doação") como funcionalidade de primeira classe com 2 categorias (parceria/demonstracao), limite de 10/mês por admin e revogação com motivo obrigatório; cupom de desconto incluído no MVP (SUB-RF-013/015) para marketing inicial; reembolso automático em 7 dias atendendo CDC art. 49 (SUB-RF-014); comprovante via link MP; painel financeiro separa receitas de cortesias (ADR-0006); cálculo de `access_status` consolida trial+paga+cortesia (consumido por QUIZ-RF-009 e PROF-RF-014). Todas as 6 pendências iniciais resolvidas.
+- [x] 2026-05-28 — Renomeação "doação" → "cortesia" propagada em toda a documentação (subscriptions.md, profile.md, requisitos.md, decisoes.md, arquitetura.md). Schema renomeado: tabela `courtesies`, `source=courtesy`, `courtesy_id`. ADR-0006 atualizado.
 
 ## A realizar — Próximos passos
 
@@ -33,32 +35,12 @@
   - [x] Módulo 3 — Conteúdo admin (`docs/rf/content-admin.md`).
   - [x] Módulo 4 — Conteúdo parceiro (`docs/rf/content-partner.md`).
   - [x] Módulo 5 — Quiz (`docs/rf/quiz.md`).
-  - [ ] Módulo 6 — Assinaturas e doações (`docs/rf/subscriptions.md`).
+  - [x] Módulo 6 — Assinaturas e cortesias (`docs/rf/subscriptions.md`).
 - [x] ~~Resolver pendências do Módulo 1 (AUTH-P-01 a AUTH-P-05).~~ Concluído.
 - [ ] Detalhar modelo de dados (schema Drizzle) a partir do esboço em `docs/arquitetura.md`.
 - [ ] Definir contrato OpenAPI inicial (endpoints de auth, quiz, admin).
 - [ ] Definir mecanismo de geração do cliente HTTP no frontend a partir da spec OpenAPI.
-- [ ] Resolver questões em aberto na seção final de `docs/requisitos.md`:
-  - [x] ~~Política de exclusão de questões pelo parceiro~~ — definida: só as próprias.
-  - [x] ~~Múltiplos administradores~~ — definido: máx. 5 via whitelist (ADR-0005).
-  - [ ] Política de **edição** de questões pelo parceiro.
-  - [ ] Janela de tempo para travar edição/exclusão após N respostas.
-  - [ ] Critério de aprovação de questões cadastradas por parceiros.
-  - [ ] Equivalência "questões cadastradas ↔ tempo de assinatura".
-  - [ ] Duração do período gratuito.
-  - [ ] Fórmula de "nível" da pergunta a partir de erros/acertos.
-  - [ ] Filtro de matéria do parceiro (especialidade vs. livre).
-  - [ ] Hierarquia entre administradores (super-admin?).
-  - [ ] Estrutura da pergunta (nº de alternativas, única vs. múltiplas corretas, suporte a imagem).
-  - [ ] Comentário/justificativa e referência à fonte na pergunta.
-  - [ ] Versionamento da pergunta quando o manual de origem é atualizado.
-  - [ ] Tipos de quiz suportados (simulado TAP completo, livre por matéria, "pontos fracos", cronometrado).
-  - [ ] Política de reset de estatísticas (do cliente, da pergunta editada).
-  - [x] ~~Cadastro de usuário: idade mínima.~~ 18 anos.
-  - [x] ~~Cadastro de usuário: verificação obrigatória de WhatsApp (OTP) ou só de e-mail.~~ Só e-mail no MVP.
-  - [x] ~~Cadastro de usuário: canal padrão de recuperação de senha.~~ E-mail.
-  - [x] ~~Cadastro de usuário: opções do campo "sexo".~~ Masculino / Feminino / Prefere não informar.
-  - [ ] Doação de assinatura: revogação e limites por admin.
+- [x] ~~Resolver questões em aberto na seção final de `docs/requisitos.md`~~ — todas as questões que estavam na lista original foram resolvidas durante a redação dos Módulos 1–6. Pendências específicas residuais ficam nos rodapés dos arquivos `rf/*.md` (códigos `<MOD>-P-NN`).
 - [ ] Listar as matérias **efetivas** do TAP (a partir do edital vigente) e cadastrá-las.
 - [ ] Criar os dois repositórios no GitHub (`bomberquiz-api`, `bomberquiz-web`).
 - [ ] Bootstrap do `bomberquiz-api` (estrutura de pastas, Bun init, Hono hello-world, Drizzle config, env Zod).
