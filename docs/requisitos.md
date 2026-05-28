@@ -144,7 +144,7 @@ Organizados em **6 módulos**, cada um em arquivo próprio sob `docs/rf/`. Ident
 | 2 | Perfil e papéis | [`rf/profile.md`](rf/profile.md) | ✅ Rascunho |
 | 3 | Conteúdo (admin) — eixos, matérias, perguntas | [`rf/content-admin.md`](rf/content-admin.md) | ✅ Rascunho |
 | 4 | Conteúdo (parceiro) | [`rf/content-partner.md`](rf/content-partner.md) | ✅ Rascunho |
-| 5 | Quiz (cliente) | `rf/quiz.md` | ⏳ Pendente |
+| 5 | Quiz (cliente) | [`rf/quiz.md`](rf/quiz.md) | ✅ Rascunho |
 | 6 | Assinaturas e doações | `rf/subscriptions.md` | ⏳ Pendente |
 
 Pendências por módulo (decisões a tomar antes da implementação) ficam no rodapé de cada arquivo, identificadas como `<MODULO>-P-NN`.
@@ -247,9 +247,13 @@ Pendências por módulo (decisões a tomar antes da implementação) ficam no ro
 - ✅ Política de exclusão de pergunta pelo parceiro → hard-delete apenas em `draft` (próprias). Em `pending_review`/`published`/`archived`, só admin atua. PART-RF-005.
 - ✅ Notificação ao parceiro de aprovação/rejeição → badge no app (`unread_review_events` em PART-RF-008) + e-mail transacional via Resend. CONT-RF-015 CA-4 / CONT-RF-016 CA-3.
 - ✅ Critério humano de aprovação → rubrica operacional inicial em [`rubrica-aprovacao.md`](rubrica-aprovacao.md).
+- ✅ Tipos de quiz no MVP → 3 modos: simulado TAP completo (respeitando `tap_weight`), livre por matéria, livre por eixo. "Pontos fracos" e filtro por dificuldade adiados (QUIZ-P-04/05). Cronômetro opcional com tempo total. Justificativa configurável (após cada questão / só no final). QUIZ-RF-001..005.
+- ✅ Reset de estatísticas pelo cliente → sim, total, com reautenticação e confirmação; preserva histórico de quizzes. QUIZ-RF-008.
+- ✅ Comportamento de quiz abandonado vs. finalizado/expirado → assimetria intencional: `finished`/`expired` contam não-respondidas como erro; `abandoned` preserva apenas o que foi efetivamente respondido. Auto-abandono após 24h sem atividade. QUIZ-RF-001 CA-6 / QUIZ-RF-004 CA-4.
+- ✅ Evolução temporal do desempenho próprio → endpoint mensal (`/me/performance/timeline`), sem leaderboard entre clientes. QUIZ-RF-010.
 
 ### Em aberto
-- **Tipos de quiz** (Módulo 5): simulado completo do TAP (respeitando pesos), livre por matéria, "pontos fracos", prova cronometrada.
+- (Sem itens pendentes além dos restantes do Módulo 6 — assinaturas e doações.)
 - **Reset de estatísticas pelo cliente** (Módulo 5): cliente pode zerar o próprio histórico?
 - Duração do período gratuito (Módulo 6).
 - Equivalência "questões cadastradas ↔ tempo de assinatura" para parceiros (Módulo 6).

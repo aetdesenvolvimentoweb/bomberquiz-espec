@@ -18,6 +18,8 @@
 - [x] 2026-05-28 — Pendências do Módulo 3 resolvidas: nível de dificuldade via job diário às 00:00 com bandas unrated/easy/medium/hard (novo CONT-RF-017); sem versionamento automático de perguntas + hard-delete permitido apenas quando `total_answers=0` (CONT-RF-012 atualizado); admins permanecem todos iguais (mantém ADR-0005); reset total de estatísticas confirmado.
 - [x] 2026-05-28 — Módulo 4 (Conteúdo parceiro) — rascunho com PART-RF-001 a PART-RF-008 em `docs/rf/content-partner.md`. Decisões: parceiro cadastra livre em qualquer matéria ativa (sem especialidade); edição de própria publicada devolve a pergunta para `pending_review`; exclusão restrita a `draft`; parceiro vê estatísticas e histórico de revisão das próprias; painel/dashboard com agregados motivacionais. 4 pendências identificadas (PART-P-01 a PART-P-04).
 - [x] 2026-05-28 — Pendências do Módulo 4 resolvidas: limite de 50 rascunhos confirmado (P-01); notificação ao parceiro via badge no app (`unread_review_events`) + e-mail transacional Resend (P-02), formalizada em CONT-RF-015/016 e PART-RF-007/008; parceiro só vê as próprias perguntas (P-03), divisão de trabalho fica externa ao sistema; rubrica operacional inicial criada em `docs/rubrica-aprovacao.md` (P-04).
+- [x] 2026-05-28 — Módulo 5 (Quiz cliente) — rascunho com QUIZ-RF-001 a QUIZ-RF-009 em `docs/rf/quiz.md`. Decisões: 3 modos no MVP (simulado TAP respeitando `tap_weight`, livre por matéria, livre por eixo); cronômetro opcional com tempo total (3 min/questão default, ajustável 1–5 min); justificativa configurável (após cada / só no final); quiz online-only e efêmero (sem pause/resume); snapshot da pergunta no momento do sorteio para imunidade a edições futuras; reset total de estatísticas pelo cliente preservando histórico de quizzes; bloqueio HTTP 402 quando sem assinatura/trial ativos. 7 pendências identificadas (QUIZ-P-01 a QUIZ-P-07).
+- [x] 2026-05-28 — Pendências do Módulo 5 resolvidas: assimetria explícita de estatísticas (finished/expired contam não-respondidas como erro; abandoned preserva só o que foi respondido) + auto-abandono após 24h sem atividade (QUIZ-P-02); reset seletivo descartado, total mantido (QUIZ-P-03); UI de cronômetro com toggle/switch principal formalizada em QUIZ-RF-001 (QUIZ-P-06); leaderboard descartado em favor de novo QUIZ-RF-010 — evolução temporal própria do usuário (QUIZ-P-07). P-01/04/05 mantidas conscientemente como pós-MVP.
 
 ## A realizar — Próximos passos
 
@@ -30,7 +32,7 @@
   - [x] Módulo 2 — Perfil e papéis (`docs/rf/profile.md`).
   - [x] Módulo 3 — Conteúdo admin (`docs/rf/content-admin.md`).
   - [x] Módulo 4 — Conteúdo parceiro (`docs/rf/content-partner.md`).
-  - [ ] Módulo 5 — Quiz (`docs/rf/quiz.md`).
+  - [x] Módulo 5 — Quiz (`docs/rf/quiz.md`).
   - [ ] Módulo 6 — Assinaturas e doações (`docs/rf/subscriptions.md`).
 - [x] ~~Resolver pendências do Módulo 1 (AUTH-P-01 a AUTH-P-05).~~ Concluído.
 - [ ] Detalhar modelo de dados (schema Drizzle) a partir do esboço em `docs/arquitetura.md`.
