@@ -143,7 +143,7 @@ Organizados em **6 módulos**, cada um em arquivo próprio sob `docs/rf/`. Ident
 | 1 | Autenticação e cadastro de usuário | [`rf/auth.md`](rf/auth.md) | ✅ Rascunho |
 | 2 | Perfil e papéis | [`rf/profile.md`](rf/profile.md) | ✅ Rascunho |
 | 3 | Conteúdo (admin) — eixos, matérias, perguntas | [`rf/content-admin.md`](rf/content-admin.md) | ✅ Rascunho |
-| 4 | Conteúdo (parceiro) | `rf/content-partner.md` | ⏳ Pendente |
+| 4 | Conteúdo (parceiro) | [`rf/content-partner.md`](rf/content-partner.md) | ✅ Rascunho |
 | 5 | Quiz (cliente) | `rf/quiz.md` | ⏳ Pendente |
 | 6 | Assinaturas e doações | `rf/subscriptions.md` | ⏳ Pendente |
 
@@ -242,11 +242,13 @@ Pendências por módulo (decisões a tomar antes da implementação) ficam no ro
 - ✅ Fórmula de nível de dificuldade da pergunta → bandas `unrated` (< 30 respostas) / `easy` (≥ 70%) / `medium` (40–70%) / `hard` (< 40%), recalculadas por job diário às 00:00 (`America/Sao_Paulo`). CONT-RF-017.
 - ✅ Versionamento de perguntas após atualização do manual → sem mecanismo automático no MVP; admin edita ou arquiva. Hard-delete só com `total_answers=0`. CONT-RF-012.
 - ✅ Hierarquia entre administradores → todos iguais (mantém ADR-0005).
+- ✅ Filtro de matéria do parceiro → cadastro livre em qualquer matéria `active`, sem vinculação por especialidade no MVP. PART-RF-002.
+- ✅ Política de edição de pergunta pelo parceiro → livre em `draft`; edição em `published` devolve para `pending_review` (sai do catálogo até nova aprovação). PART-RF-003.
+- ✅ Política de exclusão de pergunta pelo parceiro → hard-delete apenas em `draft` (próprias). Em `pending_review`/`published`/`archived`, só admin atua. PART-RF-005.
+- ✅ Notificação ao parceiro de aprovação/rejeição → badge no app (`unread_review_events` em PART-RF-008) + e-mail transacional via Resend. CONT-RF-015 CA-4 / CONT-RF-016 CA-3.
+- ✅ Critério humano de aprovação → rubrica operacional inicial em [`rubrica-aprovacao.md`](rubrica-aprovacao.md).
 
 ### Em aberto
-- Critério **humano** de aprovação de questões cadastradas por parceiros (rubrica de qualidade — o workflow técnico já está em CONT-RF-014..016).
-- Política de **edição/exclusão** de questões pelo parceiro (Módulo 4): provavelmente só as próprias, janela de tempo antes da pergunta "travar" após N respostas, etc.
-- **Filtro de matéria do parceiro** (Módulo 4): vinculação por especialidade vs. cadastro livre.
 - **Tipos de quiz** (Módulo 5): simulado completo do TAP (respeitando pesos), livre por matéria, "pontos fracos", prova cronometrada.
 - **Reset de estatísticas pelo cliente** (Módulo 5): cliente pode zerar o próprio histórico?
 - Duração do período gratuito (Módulo 6).

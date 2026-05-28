@@ -16,6 +16,8 @@
 - [x] 2026-05-28 — Pendências do Módulo 2 resolvidas: sem auto-exclusão de contas desativadas no MVP (P-01); detalhe admin de usuário com resumo financeiro via novo PROF-RF-014 (P-02); cooldown anti-takeover de 30 dias entre trocas de e-mail e 7 dias bloqueando exclusão pós-troca (P-03); hash do e-mail anonimizado com sal global em env (P-04).
 - [x] 2026-05-28 — Módulo 3 (Conteúdo admin) — rascunho com CONT-RF-001 a CONT-RF-016 em `docs/rf/content-admin.md`. Decisões: estrutura mínima da pergunta no MVP — 4 alternativas fixas, 1 correta, justificativa obrigatória, fonte oficial em texto livre opcional, 1 imagem opcional via R2 (ADR-0016); admin publica direto, parceiro entra em fila `pending_review` com aprovação/rejeição (motivo obrigatório); soft-delete `archived` em eixos/matérias/perguntas preservando estatísticas; reset opcional de estatísticas em edição via flag `reset_stats`. 4 pendências identificadas (CONT-P-01 a CONT-P-04).
 - [x] 2026-05-28 — Pendências do Módulo 3 resolvidas: nível de dificuldade via job diário às 00:00 com bandas unrated/easy/medium/hard (novo CONT-RF-017); sem versionamento automático de perguntas + hard-delete permitido apenas quando `total_answers=0` (CONT-RF-012 atualizado); admins permanecem todos iguais (mantém ADR-0005); reset total de estatísticas confirmado.
+- [x] 2026-05-28 — Módulo 4 (Conteúdo parceiro) — rascunho com PART-RF-001 a PART-RF-008 em `docs/rf/content-partner.md`. Decisões: parceiro cadastra livre em qualquer matéria ativa (sem especialidade); edição de própria publicada devolve a pergunta para `pending_review`; exclusão restrita a `draft`; parceiro vê estatísticas e histórico de revisão das próprias; painel/dashboard com agregados motivacionais. 4 pendências identificadas (PART-P-01 a PART-P-04).
+- [x] 2026-05-28 — Pendências do Módulo 4 resolvidas: limite de 50 rascunhos confirmado (P-01); notificação ao parceiro via badge no app (`unread_review_events`) + e-mail transacional Resend (P-02), formalizada em CONT-RF-015/016 e PART-RF-007/008; parceiro só vê as próprias perguntas (P-03), divisão de trabalho fica externa ao sistema; rubrica operacional inicial criada em `docs/rubrica-aprovacao.md` (P-04).
 
 ## A realizar — Próximos passos
 
@@ -27,7 +29,7 @@
   - [x] Módulo 1 — Autenticação e cadastro (`docs/rf/auth.md`).
   - [x] Módulo 2 — Perfil e papéis (`docs/rf/profile.md`).
   - [x] Módulo 3 — Conteúdo admin (`docs/rf/content-admin.md`).
-  - [ ] Módulo 4 — Conteúdo parceiro (`docs/rf/content-partner.md`).
+  - [x] Módulo 4 — Conteúdo parceiro (`docs/rf/content-partner.md`).
   - [ ] Módulo 5 — Quiz (`docs/rf/quiz.md`).
   - [ ] Módulo 6 — Assinaturas e doações (`docs/rf/subscriptions.md`).
 - [x] ~~Resolver pendências do Módulo 1 (AUTH-P-01 a AUTH-P-05).~~ Concluído.

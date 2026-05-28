@@ -320,8 +320,8 @@ Admin revisa e aprova a pergunta, publicando-a.
 **Critérios de aceitação:**
 - **CA-1:** `POST /admin/questions/:id/approve` com `{ notes? }` opcional.
 - **CA-2:** Em sucesso, `status=published`, `published_at=now()`, `reviewed_by=<admin>`, `reviewed_at=now()`.
-- **CA-3:** Entrada em `audit_log` com `action=approve_question`. Notas, se houver, ficam armazenadas para feedback ao parceiro (consultáveis pelo parceiro em UI do Módulo 4).
-- **CA-4:** Sistema envia notificação ao parceiro (canal a definir junto ao Módulo 4 — provavelmente badge no app + e-mail).
+- **CA-3:** Entrada em `audit_log` com `action=approve_question`. Notas, se houver, ficam armazenadas para feedback ao parceiro (consultáveis em PART-RF-007).
+- **CA-4:** **Notificação ao parceiro por dois canais:** (a) badge no app (contador `unread_review_events` consumido por PART-RF-008); (b) **e-mail transacional** via Resend (ADR-0012) com assunto "Sua pergunta foi aprovada", contendo enunciado-resumo e link direto para a pergunta. Em caso de aprovação com edição prévia pelo admin, o e-mail menciona "aprovada com alterações".
 - **CA-5:** Aprovação **pode incluir edições** — admin pode editar (CONT-RF-011) antes de aprovar; se houver edição prévia, isso aparece no histórico do parceiro como "aprovada com alterações".
 
 **Erros previstos:**
@@ -341,7 +341,7 @@ Admin recusa a pergunta. **Motivo obrigatório** para que o parceiro entenda o q
 **Critérios de aceitação:**
 - **CA-1:** `POST /admin/questions/:id/reject` com `{ reason }` (10–500 caracteres, obrigatório).
 - **CA-2:** Em sucesso, `status=draft` (volta para o parceiro corrigir), `reviewed_by=<admin>`, `reviewed_at=now()`, `rejection_reason=<reason>`.
-- **CA-3:** Entrada em `audit_log` com `action=reject_question`. Parceiro recebe notificação com o motivo.
+- **CA-3:** Entrada em `audit_log` com `action=reject_question`. **Notificação ao parceiro por dois canais:** (a) badge no app (incrementa `unread_review_events`); (b) **e-mail transacional** via Resend (ADR-0012) com assunto "Sua pergunta precisa de ajustes", contendo o motivo da rejeição na íntegra e link direto para reedição.
 - **CA-4:** O parceiro pode reeditar e reenviar (volta para `pending_review`) — sem limite de iterações no MVP.
 
 **Erros previstos:**
