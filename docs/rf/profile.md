@@ -22,7 +22,9 @@
 | Sufixo de e-mail anonimizado | `@deleted.local` (não roteável, apenas marcador) |
 | Reautenticação para ações destrutivas | obrigatória nas últimas 5 minutos (re-informar senha) |
 | Rate limit de troca de e-mail | 1 solicitação a cada 24h por usuário |
+| Cooldown pós-troca de e-mail | 30 dias antes de aceitar nova troca; 7 dias bloqueando exclusão de conta (anti-takeover) |
 | Status possíveis de uma conta | `active`, `inactive` (desativada), `deleted` (anonimizada) |
+| Hash do e-mail na anonimização | `sha256(SALT_GLOBAL + email_normalizado)` — `SALT_GLOBAL` é segredo de aplicação (env), `email_normalizado` é o e-mail em minúsculas |
 
 ---
 
@@ -100,6 +102,7 @@ Usuário solicita troca do e-mail de login. O novo e-mail precisa ser **confirma
 - **CA-4:** Ao clicar no link, `email` é substituído pelo `pending_email`, `email_verified_at` é atualizado, `pending_email` é limpo, token é invalidado.
 - **CA-5:** Em sucesso, sistema envia e-mail de aviso **ao endereço antigo** ("Seu e-mail de acesso foi alterado para X. Se não foi você, recupere a conta agora.") — alerta de segurança.
 - **CA-6:** Rate limit: 1 solicitação por usuário a cada 24h (regras gerais).
+- **CA-7:** **Cooldown anti-takeover:** após uma troca bem-sucedida, uma nova solicitação de troca de e-mail só é aceita após **30 dias** (`email_changed_at + 30d`). Durante esse mesmo período, a exclusão de conta (PROF-RF-009) fica bloqueada nos primeiros **7 dias** — janela em que o titular real ainda consegue reagir caso o e-mail tenha sido trocado por um invasor.
 
 **Erros previstos:**
 - **E-1:** Formato de e-mail inválido → HTTP 422.
@@ -202,7 +205,7 @@ Atende o direito de eliminação previsto na LGPD (art. 18, VI). É **irreversí
 - **CA-1:** Operação exige reautenticação (senha) **e** marcação explícita do checkbox "Entendo que esta ação é irreversível e anonimizará meus dados".
 - **CA-2:** Em sucesso, em uma única transação:
   - `name` → `"Usuário excluído"`
-  - `email` → `sha256(email_original) + "@deleted.local"` (preserva unicidade, não é roteável, não permite re-identificar)
+  - `email` → `sha256(SALT_GLOBAL + email_normalizado) + "@deleted.local"` (regras gerais; preserva unicidade, não é roteável, não permite re-identificar nem correlacionar entre instâncias)
   - `phone`, `dob`, `sex`, `avatar_url` → `null`
   - `password_hash` → `null` (impede qualquer login futuro)
   - `status` → `deleted`, `deleted_at` → timestamp atual
@@ -216,6 +219,7 @@ Atende o direito de eliminação previsto na LGPD (art. 18, VI). É **irreversí
 **Erros previstos:**
 - **E-1:** Reautenticação falha → HTTP 401.
 - **E-2:** Checkbox não marcado → HTTP 422.
+- **E-3:** Dentro do cooldown anti-takeover (PROF-RF-004 CA-7) — menos de 7 dias desde a última troca de e-mail bem-sucedida → HTTP 409 com mensagem "Exclusão temporariamente bloqueada por segurança após alteração recente de e-mail. Tente novamente em X dias."
 
 ---
 
@@ -300,9 +304,31 @@ Admin reverte um Parceiro para Cliente (perda do direito de cadastrar perguntas)
 
 ---
 
-## Pendências deste módulo
+## PROF-RF-014 — Visualizar detalhe de usuário (admin)
 
-- **PROF-P-01 — Retenção de conta desativada.** Conta `inactive` deve ser auto-excluída após N dias inativos? Sugestão para o MVP: **não** auto-excluir; manter indefinidamente até o usuário reativar ou solicitar exclusão.
-- **PROF-P-02 — Detalhamento da listagem admin.** Admin deve ver, no detalhe de um usuário, o histórico de assinaturas e doações? Decidir junto ao Módulo 6.
-- **PROF-P-03 — Cooldown na troca de e-mail.** Além do rate limit de 1 por 24h, deve haver cooldown extra logo após uma troca bem-sucedida (proteção anti-takeover de conta comprometida)?
-- **PROF-P-04 — Hash determinístico do e-mail anonimizado.** Usar SHA-256 puro ou com sal global do app? Sal global impede correlacionar dois "Usuários excluídos" entre instâncias do app, mas exige proteção do sal. Decidir no detalhamento técnico.
+**Prioridade:** Essencial (MVP).
+**Ator:** Administrador.
+**Pré-condições:** Sessão ativa com `role=admin`.
+
+**Descrição:**
+Tela de detalhe acessada a partir da listagem (PROF-RF-011). Reúne, em um único lugar, o contexto que o admin precisa para decidir promoção, revogação ou doação de assinatura.
+
+**Critérios de aceitação:**
+- **CA-1:** Endpoint `GET /admin/users/:id` retorna os campos da listagem (PROF-RF-011 CA-2) **mais** um bloco de **resumo financeiro/contrato**: assinatura ativa atual (plano, status, data de expiração), lista cronológica reversa das últimas 5 assinaturas pagas e doadas, total de doações recebidas no ano vigente.
+- **CA-2:** O schema exato do bloco de assinaturas/doações é **definido no Módulo 6** (Assinaturas e doações). Este RF garante apenas que o endpoint existe e que a UI tem o ponto de extensão.
+- **CA-3:** **Não** retorna telefone, DOB ou sexo do usuário-alvo (mesma justificativa de PROF-RF-011 CA-2 — admin não precisa para ações de papel/assinatura).
+- **CA-4:** Contas `deleted` retornam HTTP 404 (auditoria sobre conta excluída é via `audit_log`, não por essa rota).
+- **CA-5:** Acesso restrito a `admin` (idêntico a PROF-RF-011).
+
+**Erros previstos:**
+- **E-1:** Acesso de não-admin → HTTP 403.
+- **E-2:** Usuário não encontrado ou `deleted` → HTTP 404.
+
+---
+
+## Pendências deste módulo — resolvidas em 2026-05-28
+
+- ✅ **PROF-P-01 — Retenção de conta desativada.** Decidido: **sem auto-exclusão no MVP**. Conta `inactive` permanece indefinidamente até reativação ou exclusão explícita pelo usuário. Reavaliar se houver volume de contas abandonadas.
+- ✅ **PROF-P-02 — Detalhamento da listagem admin.** Decidido: **incluir no MVP** via PROF-RF-014 (endpoint de detalhe). O schema do bloco de assinaturas/doações é definido no Módulo 6, mas o ponto de extensão fica garantido aqui.
+- ✅ **PROF-P-03 — Cooldown na troca de e-mail.** Decidido: **30 dias** antes de aceitar nova troca + **7 dias** bloqueando exclusão de conta após troca bem-sucedida (anti-takeover). Implementado em PROF-RF-004 CA-7 e PROF-RF-009 E-3.
+- ✅ **PROF-P-04 — Hash do e-mail anonimizado.** Decidido: **SHA-256 com sal global** (`sha256(SALT_GLOBAL + email_normalizado)`). `SALT_GLOBAL` é variável de ambiente protegida. Especificado em regras gerais e em PROF-RF-009 CA-2.
