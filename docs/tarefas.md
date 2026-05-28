@@ -14,6 +14,8 @@
 - [x] 2026-05-28 — Pendências do Módulo 1 resolvidas: idade mínima 18 anos; sexo (M/F/Prefere não informar); recuperação só por e-mail; sem OTP de WhatsApp; avatar como URL em Cloudinary. ADR-0013 registrado.
 - [x] 2026-05-28 — Módulo 2 (Perfil e papéis) — rascunho com PROF-RF-001 a PROF-RF-013 em `docs/rf/profile.md`. Decisões: sessão única estilo Netflix (ADR-0014, ajustes em AUTH-RF-005 CA-2 e AUTH-RF-008 CA-4), dois fluxos de saída de conta — desativar reversível + excluir com anonimização LGPD (ADR-0015), admin não edita dados pessoais de outros usuários, portabilidade LGPD sob demanda via e-mail (sem endpoint no MVP). 4 pendências identificadas (PROF-P-01 a PROF-P-04).
 - [x] 2026-05-28 — Pendências do Módulo 2 resolvidas: sem auto-exclusão de contas desativadas no MVP (P-01); detalhe admin de usuário com resumo financeiro via novo PROF-RF-014 (P-02); cooldown anti-takeover de 30 dias entre trocas de e-mail e 7 dias bloqueando exclusão pós-troca (P-03); hash do e-mail anonimizado com sal global em env (P-04).
+- [x] 2026-05-28 — Módulo 3 (Conteúdo admin) — rascunho com CONT-RF-001 a CONT-RF-016 em `docs/rf/content-admin.md`. Decisões: estrutura mínima da pergunta no MVP — 4 alternativas fixas, 1 correta, justificativa obrigatória, fonte oficial em texto livre opcional, 1 imagem opcional via R2 (ADR-0016); admin publica direto, parceiro entra em fila `pending_review` com aprovação/rejeição (motivo obrigatório); soft-delete `archived` em eixos/matérias/perguntas preservando estatísticas; reset opcional de estatísticas em edição via flag `reset_stats`. 4 pendências identificadas (CONT-P-01 a CONT-P-04).
+- [x] 2026-05-28 — Pendências do Módulo 3 resolvidas: nível de dificuldade via job diário às 00:00 com bandas unrated/easy/medium/hard (novo CONT-RF-017); sem versionamento automático de perguntas + hard-delete permitido apenas quando `total_answers=0` (CONT-RF-012 atualizado); admins permanecem todos iguais (mantém ADR-0005); reset total de estatísticas confirmado.
 
 ## A realizar — Próximos passos
 
@@ -24,7 +26,7 @@
 - [ ] **Escrever os módulos de RF restantes:**
   - [x] Módulo 1 — Autenticação e cadastro (`docs/rf/auth.md`).
   - [x] Módulo 2 — Perfil e papéis (`docs/rf/profile.md`).
-  - [ ] Módulo 3 — Conteúdo admin (`docs/rf/content-admin.md`).
+  - [x] Módulo 3 — Conteúdo admin (`docs/rf/content-admin.md`).
   - [ ] Módulo 4 — Conteúdo parceiro (`docs/rf/content-partner.md`).
   - [ ] Módulo 5 — Quiz (`docs/rf/quiz.md`).
   - [ ] Módulo 6 — Assinaturas e doações (`docs/rf/subscriptions.md`).

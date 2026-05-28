@@ -148,3 +148,17 @@ Todas acessadas via **portas** definidas em `application/` ou `domain/`, impleme
 
 Portabilidade (art. 18, V) **não** é atendida via endpoint no MVP — fica como atendimento sob demanda documentado na política de privacidade. Reavaliar se houver volume.
 **Consequências:** Adere à LGPD sem cascata destrutiva. O preço é (a) UI precisa diferenciar claramente os dois fluxos para o usuário não confundir desativar com excluir, (b) o sufixo `@deleted.local` é não-roteável e qualquer regra de unicidade de e-mail precisa ignorar essa faixa, (c) listagens administrativas precisam filtrar `status != 'deleted'` por padrão para não poluir a UI.
+
+## 0016 — Estrutura mínima da pergunta no MVP (2026-05-28)
+
+**Contexto:** A pergunta é a unidade central do conteúdo. Há trade-offs reais entre flexibilidade (nº variável de alternativas, múltiplas corretas, múltiplas imagens, versionamento) e simplicidade de modelagem/UI/correção. O TAP segue o padrão de prova de concurso brasileiro: 4 alternativas, 1 correta, sem múltipla escolha estendida.
+**Decisão:** Para o MVP, a pergunta tem:
+- **Exatamente 4 alternativas** (`alternatives[4]`), **1 única correta** (`correct_index ∈ {0,1,2,3}`).
+- **Justificativa obrigatória** (`explanation`), exibida **após** o usuário responder. Reforça aprendizado e força o autor a fundamentar.
+- **Referência à fonte** (texto livre, opcional) — campo `source_reference` tipo "NT-01 CBMGO, art. 5º, §2º". Sem modelagem hierárquica.
+- **1 imagem opcional** por pergunta (R2, ≤ 2 MB, jpg/png/webp). Cobre diagramas/equipamentos/plantas.
+- **Workflow diferente para admin e parceiro:** admin publica direto (`status=published`); parceiro envia para fila (`pending_review`); admin aprova ou rejeita. Detalhes em CONT-RF-014..016 e no Módulo 4.
+- **Soft-delete** via `status=archived` — perguntas nunca são hard-deletadas (preserva estatísticas e respostas históricas).
+- **Reset de estatísticas opcional** ao editar — flag `reset_stats` no PATCH; respostas antigas continuam armazenadas mas deixam de contar (`stats_reset_at`). Quem edita decide. UI sugere `true` se gabarito mudou.
+
+**Consequências:** Modelagem simples (sem JSON-schema dinâmico para alternativas, sem versionamento de pergunta, sem múltipla correta). Espelha o TAP real. Limita uso para perguntas V/F ou de "marque todas" — provavelmente OK no domínio bombeiro/concurso, mas se o cliente decidir cobrir simulado de "marque todas as corretas", esse ADR é revisto. A divisão admin/parceiro de workflow exige campos `reviewed_by`, `reviewed_at`, `rejection_reason` no schema desde o início.

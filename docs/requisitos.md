@@ -142,7 +142,7 @@ Organizados em **6 módulos**, cada um em arquivo próprio sob `docs/rf/`. Ident
 |---|---|---|---|
 | 1 | Autenticação e cadastro de usuário | [`rf/auth.md`](rf/auth.md) | ✅ Rascunho |
 | 2 | Perfil e papéis | [`rf/profile.md`](rf/profile.md) | ✅ Rascunho |
-| 3 | Conteúdo (admin) — eixos, matérias, perguntas | `rf/content-admin.md` | ⏳ Pendente |
+| 3 | Conteúdo (admin) — eixos, matérias, perguntas | [`rf/content-admin.md`](rf/content-admin.md) | ✅ Rascunho |
 | 4 | Conteúdo (parceiro) | `rf/content-partner.md` | ⏳ Pendente |
 | 5 | Quiz (cliente) | `rf/quiz.md` | ⏳ Pendente |
 | 6 | Assinaturas e doações | `rf/subscriptions.md` | ⏳ Pendente |
@@ -236,25 +236,19 @@ Pendências por módulo (decisões a tomar antes da implementação) ficam no ro
 - ✅ Política de saída de conta → dois fluxos: desativar (reversível) e excluir (anonimização irreversível das PII, preservando FKs). ADR-0015 / PROF-RF-007..009.
 - ✅ Política de sessões simultâneas → máximo 1 sessão ativa por usuário; novo login encerra a anterior. ADR-0014 / PROF-RF-010.
 - ✅ Edição de dados de outros usuários pelo admin → não permitida (admin só altera papel). PROF-RF-002 / PROF-RF-012 / PROF-RF-013.
+- ✅ Estrutura da pergunta no MVP → 4 alternativas fixas, 1 única correta, justificativa obrigatória, fonte oficial em texto livre opcional, 1 imagem opcional. ADR-0016 / CONT-RF-010.
+- ✅ Workflow de aprovação de perguntas → admin publica direto; parceiro envia para fila (`pending_review`); admin aprova ou rejeita com motivo obrigatório. ADR-0016 / CONT-RF-014..016.
+- ✅ Reset de estatísticas em edição de pergunta → admin escolhe via flag `reset_stats` no PATCH; UI sugere `true` quando gabarito muda. Respostas antigas são preservadas (`stats_reset_at`). CONT-RF-011 CA-4.
+- ✅ Fórmula de nível de dificuldade da pergunta → bandas `unrated` (< 30 respostas) / `easy` (≥ 70%) / `medium` (40–70%) / `hard` (< 40%), recalculadas por job diário às 00:00 (`America/Sao_Paulo`). CONT-RF-017.
+- ✅ Versionamento de perguntas após atualização do manual → sem mecanismo automático no MVP; admin edita ou arquiva. Hard-delete só com `total_answers=0`. CONT-RF-012.
+- ✅ Hierarquia entre administradores → todos iguais (mantém ADR-0005).
 
 ### Em aberto
-- Como medir/definir o "nível" de uma pergunta a partir dos erros/acertos (fórmula, thresholds).
-- Critério de aprovação de questões cadastradas por parceiros (workflow de revisão? auto-aprovação?).
-- Política de **edição** de questões pelo parceiro (provavelmente só as próprias, ainda a confirmar).
-- Janela de tempo para editar/excluir antes de a questão "travar" (após ter sido respondida por N usuários?).
-- Duração do período gratuito.
-- Equivalência "questões cadastradas ↔ tempo de assinatura" para parceiros (informa quanto o admin deve doar).
-- **Filtro de matéria do parceiro:** cada parceiro é vinculado a matérias específicas (especialidade) ou pode cadastrar em qualquer matéria?
-- **Hierarquia entre administradores:** todos têm os mesmos poderes ou há "super-admin" (ex.: só ele pode promover parceiros / revogar admin)?
-- **Estrutura da pergunta:** quantidade fixa ou variável de alternativas? Única correta ou múltiplas corretas? Pergunta pode incluir imagem/diagrama (importante para conteúdo operacional de bombeiro)?
-- **Comentário/justificativa da resposta:** mostrar após responder? obrigatório no cadastro?
-- **Referência à fonte:** cada pergunta deve apontar para capítulo/artigo/página do manual/norma de origem?
-- **Versionamento da pergunta:** quando o manual é atualizado, como tratar perguntas baseadas em versão antiga?
-- **Tipos de quiz:** simulado completo do TAP (respeitando pesos), prático livre por matéria, "matérias em que pior performo" (sugerido pelo sistema), prova cronometrada igual ao TAP real?
-- **Reset de estatísticas:** cliente pode zerar seu histórico? Após mudança significativa de uma pergunta, suas estatísticas zeram?
-- **Cadastro do usuário — específicos:**
-  - Idade mínima para uso (especialmente se for menor de 18).
-  - Verificação obrigatória de WhatsApp via OTP, ou só de e-mail?
-  - Política de "esqueci minha senha": canal padrão (e-mail ou WhatsApp).
-  - Campo "sexo" — usar opções fixas (Masculino/Feminino/Prefere não informar) ou aberto?
-- **Doação de assinatura:** admin pode revogar uma doação ainda não consumida? Existe limite por admin/por mês?
+- Critério **humano** de aprovação de questões cadastradas por parceiros (rubrica de qualidade — o workflow técnico já está em CONT-RF-014..016).
+- Política de **edição/exclusão** de questões pelo parceiro (Módulo 4): provavelmente só as próprias, janela de tempo antes da pergunta "travar" após N respostas, etc.
+- **Filtro de matéria do parceiro** (Módulo 4): vinculação por especialidade vs. cadastro livre.
+- **Tipos de quiz** (Módulo 5): simulado completo do TAP (respeitando pesos), livre por matéria, "pontos fracos", prova cronometrada.
+- **Reset de estatísticas pelo cliente** (Módulo 5): cliente pode zerar o próprio histórico?
+- Duração do período gratuito (Módulo 6).
+- Equivalência "questões cadastradas ↔ tempo de assinatura" para parceiros (Módulo 6).
+- **Doação de assinatura** (Módulo 6): admin pode revogar uma doação não consumida? Existe limite por admin/mês?
