@@ -134,7 +134,7 @@ Usuário informa e-mail e senha, obtém sessão ativa.
 
 **Critérios de aceitação:**
 - **CA-1:** Cookie de sessão é invalidado no servidor e removido no cliente.
-- **CA-2:** Logout afeta **apenas a sessão corrente**. Outras sessões do mesmo usuário (outro dispositivo) permanecem.
+- **CA-2:** Pela política de **sessão única** (ADR-0014 / PROF-RF-010), o usuário possui no máximo uma sessão ativa; o logout simplesmente encerra essa sessão única.
 - **CA-3:** Endpoint é idempotente: chamar logout sem sessão ativa retorna 200 mesmo assim.
 
 ---
@@ -190,7 +190,7 @@ Política de duração e renovação de sessão.
 - **CA-1:** Sessão dura 7 dias a partir da última atividade (sliding expiration).
 - **CA-2:** Cada request autenticada atualiza o `last_seen_at` da sessão (no máximo 1× por minuto, para evitar write amplification).
 - **CA-3:** Sessão inativa por >7 dias é purgada por job periódico.
-- **CA-4:** Múltiplas sessões simultâneas do mesmo usuário (vários dispositivos) são permitidas.
+- **CA-4:** **Máximo 1 sessão ativa simultânea por usuário.** Novo login bem-sucedido invalida automaticamente a sessão anterior (ver ADR-0014 e PROF-RF-010 para detalhes do comportamento e da mensagem mostrada ao dispositivo descartado).
 - **CA-5:** Endpoint `GET /me` retorna o usuário corrente a partir da sessão; usado pelo frontend para hidratar estado após reload da PWA.
 
 ---

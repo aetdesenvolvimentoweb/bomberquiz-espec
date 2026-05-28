@@ -132,3 +132,19 @@ Todas acessadas via **portas** definidas em `application/` ou `domain/`, impleme
 - Cloudinary acessado por porta `AvatarStorage` em `application/`, implementação em `infra/storage/cloudinary.adapter.ts`.
 
 **Consequências:** Avatares ficam responsivos e otimizados sem código de redimensionamento próprio. Adiciona um terceiro provedor de storage (R2 para questões, Cloudinary para avatares), mas com escopo claro de uso para cada. Migração para um único provedor no futuro é localizada na camada `infra/`.
+
+## 0014 — Política de sessão única (2026-05-28)
+
+**Contexto:** O cliente pediu comportamento "estilo Netflix" para desincentivar compartilhamento de conta (uma assinatura, um usuário ativo por vez). A modelagem original em AUTH-RF-008 CA-4 e AUTH-RF-005 CA-2 permitia múltiplas sessões simultâneas em vários dispositivos.
+**Decisão:** Cada usuário tem **no máximo 1 sessão ativa simultânea**. Novo login bem-sucedido invalida automaticamente toda sessão anterior do mesmo `user_id`. O dispositivo descartado, na próxima requisição autenticada, recebe `HTTP 401 { reason: "session_replaced" }` e o frontend exibe "Você foi desconectado porque entrou em outro dispositivo". As regras alteradas estão consolidadas em PROF-RF-010; AUTH-RF-005 CA-2 e AUTH-RF-008 CA-4 foram reescritas para refletir essa política.
+**Consequências:** Reduz compartilhamento informal de assinatura sem precisar de DRM ou device fingerprinting. UX tem o trade-off de quem esquece o logout em um dispositivo público — mas o aviso explícito no próximo login mitiga. Não há UI de "minhas sessões" no MVP porque, por construção, só há uma. A política de "todas as sessões ativas são invalidadas" em AUTH-RF-007 CA-3 (redefinição de senha) continua válida — apenas, em prática, "todas" = "a única".
+
+## 0015 — Saída de conta: desativação reversível + exclusão por anonimização (2026-05-28)
+
+**Contexto:** A LGPD (art. 18, VI) garante ao titular o direito de eliminação dos dados pessoais. Atender literalmente com hard-delete em cascata destruiria o histórico do sistema (questões cadastradas por parceiros, estatísticas, doações financeiras), o que prejudicaria outros usuários e os relatórios financeiros. Por outro lado, simplesmente "desativar" sem remover PII não atende o direito de eliminação.
+**Decisão:** Oferecer **dois fluxos distintos** ao usuário:
+- **Desativar conta** (PROF-RF-007/008): reversível, preserva 100% dos dados, encerra a sessão e bloqueia logins até reativação. Útil para quem só quer pausar.
+- **Excluir conta** (PROF-RF-009): irreversível, anonimiza as PII em uma única transação — `name` → "Usuário excluído", `email` → `sha256(email)+"@deleted.local"` (preserva unicidade, não roteável, não re-identificável), `phone`/`dob`/`sex`/`avatar_url` → `null`, `password_hash` → `null`, `status` → `deleted`. **Mantém** `users.id` e as FKs apontando para ele (questões cadastradas, doações, estatísticas).
+
+Portabilidade (art. 18, V) **não** é atendida via endpoint no MVP — fica como atendimento sob demanda documentado na política de privacidade. Reavaliar se houver volume.
+**Consequências:** Adere à LGPD sem cascata destrutiva. O preço é (a) UI precisa diferenciar claramente os dois fluxos para o usuário não confundir desativar com excluir, (b) o sufixo `@deleted.local` é não-roteável e qualquer regra de unicidade de e-mail precisa ignorar essa faixa, (c) listagens administrativas precisam filtrar `status != 'deleted'` por padrão para não poluir a UI.

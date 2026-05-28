@@ -12,6 +12,7 @@
 - [x] 2026-05-28 — Convenção de RFs definida (6 módulos, formato `<MODULO>-RF-NNN`, arquivos separados em `docs/rf/`). Índice criado em `docs/requisitos.md`.
 - [x] 2026-05-28 — Módulo 1 (Autenticação e cadastro) — rascunho com AUTH-RF-001 a AUTH-RF-011 em `docs/rf/auth.md`. 5 pendências identificadas (AUTH-P-01 a AUTH-P-05).
 - [x] 2026-05-28 — Pendências do Módulo 1 resolvidas: idade mínima 18 anos; sexo (M/F/Prefere não informar); recuperação só por e-mail; sem OTP de WhatsApp; avatar como URL em Cloudinary. ADR-0013 registrado.
+- [x] 2026-05-28 — Módulo 2 (Perfil e papéis) — rascunho com PROF-RF-001 a PROF-RF-013 em `docs/rf/profile.md`. Decisões: sessão única estilo Netflix (ADR-0014, ajustes em AUTH-RF-005 CA-2 e AUTH-RF-008 CA-4), dois fluxos de saída de conta — desativar reversível + excluir com anonimização LGPD (ADR-0015), admin não edita dados pessoais de outros usuários, portabilidade LGPD sob demanda via e-mail (sem endpoint no MVP). 4 pendências identificadas (PROF-P-01 a PROF-P-04).
 
 ## A realizar — Próximos passos
 
@@ -21,7 +22,7 @@
 - [ ] Esboçar fluxos principais detalhados (realizar teste, cadastrar questão, assinar, parceiro ganha assinatura).
 - [ ] **Escrever os módulos de RF restantes:**
   - [x] Módulo 1 — Autenticação e cadastro (`docs/rf/auth.md`).
-  - [ ] Módulo 2 — Perfil e papéis (`docs/rf/profile.md`).
+  - [x] Módulo 2 — Perfil e papéis (`docs/rf/profile.md`).
   - [ ] Módulo 3 — Conteúdo admin (`docs/rf/content-admin.md`).
   - [ ] Módulo 4 — Conteúdo parceiro (`docs/rf/content-partner.md`).
   - [ ] Módulo 5 — Quiz (`docs/rf/quiz.md`).

@@ -141,7 +141,7 @@ Organizados em **6 módulos**, cada um em arquivo próprio sob `docs/rf/`. Ident
 | # | Módulo | Arquivo | Status |
 |---|---|---|---|
 | 1 | Autenticação e cadastro de usuário | [`rf/auth.md`](rf/auth.md) | ✅ Rascunho |
-| 2 | Perfil e papéis | `rf/profile.md` | ⏳ Pendente |
+| 2 | Perfil e papéis | [`rf/profile.md`](rf/profile.md) | ✅ Rascunho |
 | 3 | Conteúdo (admin) — eixos, matérias, perguntas | `rf/content-admin.md` | ⏳ Pendente |
 | 4 | Conteúdo (parceiro) | `rf/content-partner.md` | ⏳ Pendente |
 | 5 | Quiz (cliente) | `rf/quiz.md` | ⏳ Pendente |
@@ -233,6 +233,9 @@ Pendências por módulo (decisões a tomar antes da implementação) ficam no ro
 - ✅ Tipo de aplicação → PWA web mobile-first (ADR-0010).
 - ✅ Forma de armazenamento → Postgres no Neon, via Drizzle (ADR-0009).
 - ✅ Gateway de pagamento → Mercado Pago (ADR-0012).
+- ✅ Política de saída de conta → dois fluxos: desativar (reversível) e excluir (anonimização irreversível das PII, preservando FKs). ADR-0015 / PROF-RF-007..009.
+- ✅ Política de sessões simultâneas → máximo 1 sessão ativa por usuário; novo login encerra a anterior. ADR-0014 / PROF-RF-010.
+- ✅ Edição de dados de outros usuários pelo admin → não permitida (admin só altera papel). PROF-RF-002 / PROF-RF-012 / PROF-RF-013.
 
 ### Em aberto
 - Como medir/definir o "nível" de uma pergunta a partir dos erros/acertos (fórmula, thresholds).
