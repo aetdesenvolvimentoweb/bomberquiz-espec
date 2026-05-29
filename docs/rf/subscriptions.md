@@ -65,7 +65,7 @@
 Admin gerencia os planos vendidos. Qualquer usuário lê a lista de planos ativos.
 
 **Critérios de aceitação:**
-- **CA-1:** `GET /plans` (público autenticado) retorna planos com `is_active=true`: `{ slug, name, duration_days, pix_price, card_price, max_installments }`. Preços em centavos para evitar float; cliente formata.
+- **CA-1:** `GET /plans` é **público (sem sessão)** — um visitante não cadastrado consegue ver preços antes de criar conta (página de preços / decisão de compra). Retorna planos com `is_active=true`: `{ slug, name, duration_days, pix_price, card_price, max_installments }`. Preços em centavos para evitar float; cliente formata. Não expõe nenhum dado sensível; sujeito ao rate limit global por IP (60 req/min).
 - **CA-2:** `PATCH /admin/plans/:id` (admin) altera `pix_price`, `card_price`, `is_active`, `max_installments`. Validação: `card_price ≥ pix_price`. UI sugere `card_price = round(pix_price × 1.10)` mas permite override.
 - **CA-3:** Os 4 slugs (`monthly`/`quarterly`/`semiannual`/`annual`) são **semeados** na primeira migração com preços de placeholder; admin ajusta antes do lançamento.
 - **CA-4:** Plano não pode ser **excluído** — apenas desativado (`is_active=false`). Mantém integridade com assinaturas históricas.

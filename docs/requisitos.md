@@ -103,7 +103,7 @@ Agrupamento de matérias afins. Exemplos:
 - _(outros eixos a serem cadastrados conforme edital vigente)_
 
 ### Nível 2 — Matéria
-Cada matéria pertence a **um** eixo temático e geralmente corresponde a uma **fonte oficial** (manual operacional, norma técnica, lei, protocolo). Cada matéria tem um **peso/quantidade de questões cobradas no TAP** — isso é usado pelo sistema na hora de **montar um quiz que simule a distribuição real da prova**.
+Cada matéria pertence a **um** eixo temático e geralmente corresponde a uma **fonte oficial** (manual operacional, norma técnica, lei, protocolo). Cada matéria tem um **peso/quantidade de questões cobradas no TAP** — isso é usado pelo sistema na hora de **montar um quiz que simule a distribuição real da prova**. A prova do TAP tem **50 questões no total**, então a soma dos pesos de todas as matérias deve totalizar ~50 (o simulado TAP em QUIZ-RF-001 reflete essa distribuição).
 
 Exemplos:
 
@@ -150,6 +150,8 @@ Organizados em **6 módulos**, cada um em arquivo próprio sob `docs/rf/`. Ident
 
 Pendências por módulo (decisões a tomar antes da implementação) ficam no rodapé de cada arquivo, identificadas como `<MODULO>-P-NN`.
 
+O **inventário consolidado de endpoints** (todos os módulos) e as convenções de contrato estão em [`api.md`](api.md).
+
 ## Requisitos não-funcionais
 
 > Performance, usabilidade, plataforma alvo, offline-first, multi-usuário, etc.
@@ -193,7 +195,7 @@ Pendências por módulo (decisões a tomar antes da implementação) ficam no ro
 ### Integrações externas
 - **Pagamentos:** Mercado Pago (PIX + cartão, assinaturas recorrentes).
 - **WhatsApp:** WhatsApp Cloud API (Meta) ou Z-API — _provedor a confirmar_.
-- **E-mail transacional:** Resend ou AWS SES — _a confirmar_.
+- **E-mail transacional:** **Resend** (confirmado, ADR-0012). Canal de suporte do MVP também é e-mail (`SUPPORT_EMAIL`). Migração para SES localizada na porta `EmailSender` se o volume crescer.
 - **Armazenamento de imagens de questões:** Cloudflare R2 (sem cobrança de egress).
 - **Armazenamento de avatares:** Cloudinary (free tier, transformações automáticas) — ver ADR-0013.
 
@@ -258,7 +260,5 @@ Pendências por módulo (decisões a tomar antes da implementação) ficam no ro
 - ✅ Equivalência "questões cadastradas ↔ tempo de assinatura" → **sem regra automática no MVP** — admin observa o trabalho e doa manualmente. SUB-P-02.
 
 ### Em aberto
-- (Vazio — todos os módulos do MVP cobertos. Pendências individuais por módulo estão nos arquivos `rf/*.md`.)
-- **Reset de estatísticas pelo cliente** (Módulo 5): cliente pode zerar o próprio histórico?
-- Duração do período gratuito (Módulo 6).
-- Equivalência "questões cadastradas ↔ tempo de assinatura" para parceiros (Módulo 6).
+- Todos os módulos funcionais do MVP estão cobertos; pendências por módulo estão nos rodapés de `rf/*.md`.
+- **Pendências não-funcionais/de negócio** (ver `docs/tarefas.md`): definição de CNPJ/regime tributário e NFS-e (ADR-0019); redação da Política de Privacidade + Termos (bloqueio de lançamento); spike do Better-Auth (ADR-0018).

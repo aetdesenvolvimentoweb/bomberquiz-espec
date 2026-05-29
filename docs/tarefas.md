@@ -24,6 +24,8 @@
 - [x] 2026-05-28 — Renomeação "doação" → "cortesia" propagada em toda a documentação (subscriptions.md, profile.md, requisitos.md, decisoes.md, arquitetura.md). Schema renomeado: tabela `courtesies`, `source=courtesy`, `courtesy_id`. ADR-0006 atualizado.
 - [x] 2026-05-28 — Revisão pré-implementação dos 8 itens identificados: (1) schema do `audit_log` documentado em `arquitetura.md`; (2) formato padronizado de resposta de erro `{ error: { code, message, details?, fields?, request_id } }`; (3) rate limit baseline 60 req/min por IP + 120 req/min por user; (4) estratégia de domínios em duas fases (provisórios `pages.dev`/`fly.dev` → próprios `*.bomberquiz.com.br` no lançamento) com config-driven URLs; (5) Resend confirmado como provedor de e-mail; (6) WhatsApp adiado conscientemente (sem canal ativo no MVP); (7) Política de privacidade + Termos como bloqueio explícito de lançamento (não da implementação); (8) matérias do TAP cadastráveis em runtime — ativar/desativar via CONT-RF-008 absorve o ciclo anual do edital (labels de UI: "Desativar matéria"/"Reativar matéria").
 
+- [x] 2026-05-29 — Segunda rodada de revisão pré-implementação (10 lacunas avaliadas e tratadas): **(C)** reconciliado o "Modelo de dados" de `arquitetura.md` com os RFs (corrigido `subscription_donations`→`courtesies`, `quizzes`→`quiz_sessions`, tabelas faltantes `subscription_plans`/`coupons`/`user_access`/`sessions`, campos de `users`); **(B1)** ADR-0017 — jobs via scheduler in-process + seção "Jobs agendados" em `arquitetura.md`; **(B2)** ADR-0018 — fronteira Better-Auth × custom (com spike obrigatório no bootstrap); **(B3)** canal de suporte = e-mail (`SUPPORT_EMAIL`, config-driven); **(B4)** ADR-0019 — NFS-e fora do escopo do MVP; **(B5)** ADR-0020 — backup PITR Neon + dump lógico para R2; **(D1)** `GET /plans` tornado público (SUB-RF-001); **(D2)** expurgo de IP/user-agent do `audit_log` após 12 meses + nota para política de privacidade; **(D3)** catálogo consolidado de e-mails transacionais em `arquitetura.md`; **(D4)** simulado TAP — prova real tem 50 questões; teto defensivo de 60 questões na soma dos `tap_weight` (QUIZ-RF-001 E-6).
+
 ## A realizar — Próximos passos
 
 - [x] ~~Definir o tipo de aplicação~~ — PWA web mobile-first (ADR-0010).
@@ -39,18 +41,24 @@
   - [x] Módulo 6 — Assinaturas e cortesias (`docs/rf/subscriptions.md`).
 - [x] ~~Resolver pendências do Módulo 1 (AUTH-P-01 a AUTH-P-05).~~ Concluído.
 - [ ] Detalhar modelo de dados (schema Drizzle) a partir do esboço em `docs/arquitetura.md`.
-- [ ] Definir contrato OpenAPI inicial (endpoints de auth, quiz, admin).
+- [x] 2026-05-29 — **Contrato da API** consolidado em [`api.md`](api.md): inventário dos endpoints dos 6 módulos (método, rota, papel, RF) + convenções transversais (auth por cookie, paginação, envelope de erro, versionamento, idempotência, datas/centavos). A spec OpenAPI **canônica** continua sendo gerada do Zod no backend (ADR-0008) — `api.md` é a planta e o checklist de conformidade.
+- [ ] Gerar a spec OpenAPI de fato no `bomberquiz-api` (`@hono/zod-openapi` + Scalar), conforme a planta em `api.md`, e configurar o download/geração do cliente no CI do `bomberquiz-web`.
 - [ ] Definir mecanismo de geração do cliente HTTP no frontend a partir da spec OpenAPI.
 - [x] ~~Resolver questões em aberto na seção final de `docs/requisitos.md`~~ — todas as questões que estavam na lista original foram resolvidas durante a redação dos Módulos 1–6. Pendências específicas residuais ficam nos rodapés dos arquivos `rf/*.md` (códigos `<MOD>-P-NN`).
 - [x] ~~Listar as matérias efetivas do TAP~~ — **não-aplicável como tarefa prévia**. O cadastro acontece naturalmente via UI quando o admin estiver no ar (CONT-RF-002/006), e o ciclo do edital (matérias entram/saem a cada ano) é absorvido pela mecânica de ativar/desativar matéria (CONT-RF-008 CA-5).
 - [ ] Criar os dois repositórios no GitHub (`bomberquiz-api`, `bomberquiz-web`).
 - [ ] Bootstrap do `bomberquiz-api` (estrutura de pastas, Bun init, Hono hello-world, Drizzle config, env Zod).
+  - [ ] **Spike Better-Auth (ADR-0018):** validar que os hooks (`before/after` signIn/signUp, `databaseHooks`) suportam sessão única, lockout exponencial, cooldown de troca de e-mail, alerta ao e-mail antigo, versionamento de consentimento e anonimização LGPD. Onde não suportar, implementar sobre as tabelas do Better-Auth via Drizzle.
+  - [ ] **Scheduler in-process (ADR-0017):** wiring dos 5 jobs (dificuldade, lembretes, expiração de quiz, purga de sessões, dump de backup) em `infra/scheduler/`, com horários em env e idempotência.
+  - [ ] **Backup (ADR-0020):** job de `pg_dump` → R2 + runbook de restauração no repo.
 - [ ] Bootstrap do `bomberquiz-web` (Vite + React, Tailwind, shadcn init, vite-plugin-pwa).
 - [ ] Configurar deploy: Fly.io (api) + Cloudflare Pages (web) + Neon (banco).
 - [x] ~~Validar provedor de e-mail~~ — **Resend** confirmado (ADR-0012 atualizado).
 - [ ] Validar provedor de WhatsApp (Cloud API vs Z-API) — adiado conscientemente; WhatsApp não é canal ativo no MVP (só contato declarado). Reavaliar quando virar canal ativo.
 - [ ] **🚩 Bloqueio de lançamento público:** Redigir Política de Privacidade + Termos de Uso (LGPD). Beta privado pode rodar com versão preliminar; contratar advogado especializado para revisão antes da abertura pública. Versionar como `docs/legal/privacidade-vN.md` e `docs/legal/termos-vN.md` (sistema já tem `consent_version` e reaceite em PROF-RF-006).
 - [ ] Especificar fluxo técnico de verificação de e-mail (envio, expiração de token, reenvio).
+- [ ] **🚩 Pendência jurídica/fiscal (ADR-0019):** definir CNPJ e regime tributário; decidir emissão de NFS-e (manual no início vs. integração com emissor). Reavaliar antes/logo após o lançamento público. Pré-requisito também para o WhatsApp Cloud API (exige CNPJ/KYC).
+- [ ] Definir `SUPPORT_EMAIL` real e criar a caixa de suporte (ex.: `suporte@bomberquiz.com.br` na Fase 2; um endereço provisório na Fase 1/beta).
 
 ## Backlog (sem prioridade definida)
 

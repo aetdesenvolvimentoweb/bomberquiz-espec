@@ -10,6 +10,7 @@ Ao iniciar uma sessão, leia primeiro:
 - [docs/requisitos.md](docs/requisitos.md) — especificação de requisitos
 - [docs/arquitetura.md](docs/arquitetura.md) — arquitetura técnica, stack e estrutura dos repositórios
 - [docs/decisoes.md](docs/decisoes.md) — ADRs (decisões técnicas e justificativas)
+- [docs/api.md](docs/api.md) — contrato da API: inventário de endpoints + convenções
 - [docs/tarefas.md](docs/tarefas.md) — tarefas realizadas e a realizar
 
 ## Stack e topologia (resumo)

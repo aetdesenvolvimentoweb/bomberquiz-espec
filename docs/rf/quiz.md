@@ -18,7 +18,7 @@
 |---|---|
 | Modos de quiz suportados no MVP | `tap_simulation`, `free_subject`, `free_axis` |
 | Tamanho do quiz livre (`free_subject`/`free_axis`) | escolha do cliente entre **10, 20, 30 ou 50** questões |
-| Tamanho do simulado TAP | soma dos `tap_weight` das matérias com `status=active` e `tap_weight > 0` |
+| Tamanho do simulado TAP | soma dos `tap_weight` das matérias com `status=active` e `tap_weight > 0`. A prova real do TAP tem **50 questões**, então a soma dos pesos deve totalizar ~50. Teto defensivo de **60** questões (folga para variação do edital): se a soma exceder, o sistema bloqueia o início com aviso ao admin de revisar os `tap_weight` (provável erro de cadastro) |
 | Cronômetro | opcional, **tempo total**. Padrão = 3 minutos × nº de questões. Ajustável pelo cliente entre 1–5 min/questão |
 | Modo de exibição da justificativa | `after_each` ou `at_end` (escolha do cliente ao iniciar o quiz) |
 | Mínimo de questões publicadas para iniciar quiz | 5 (modos livres); para simulado TAP, ao menos 1 questão em cada matéria com `tap_weight > 0` |
@@ -60,7 +60,7 @@ Cliente define modo, escopo e preferências; sistema sorteia as questões e abre
   ```
   UI: na tela de iniciar quiz, `timer_enabled` é um **toggle/switch principal** ("Cronômetro: ligado/desligado"). Quando ligado, expõe o slider de tempo por questão; quando desligado, oculta o slider. Garante que o usuário perceba claramente que cronômetro é opcional.
 - **CA-2:** Validações:
-  - `tap_simulation`: exige ao menos 1 questão `published` em cada matéria `active` com `tap_weight > 0`. Caso contrário → E-1 com lista de matérias sem questões.
+  - `tap_simulation`: exige ao menos 1 questão `published` em cada matéria `active` com `tap_weight > 0`. Caso contrário → E-1 com lista de matérias sem questões. Se a soma dos `tap_weight` exceder o teto de 60 (regras gerais) → E-6 (provável erro de cadastro de peso).
   - `free_subject`: matéria deve estar `active` e ter ao menos 5 questões `published`. Senão → E-2.
   - `free_axis`: eixo deve estar `active` e ter ao menos 5 questões `published` somando todas as matérias. Senão → E-3.
   - `size` ∈ {10, 20, 30, 50} para os modos livres.
@@ -94,6 +94,7 @@ Cliente define modo, escopo e preferências; sistema sorteia as questões e abre
 - **E-3:** Eixo com menos de 5 questões publicadas → HTTP 409.
 - **E-4:** Acesso bloqueado por falta de assinatura ativa (QUIZ-RF-009) → HTTP 402.
 - **E-5:** Validação Zod falha → HTTP 422.
+- **E-6:** Soma dos `tap_weight` excede o teto de 60 → HTTP 409 com `{ reason: "tap_weight_overflow", total_weight }` (orienta o admin a revisar os pesos).
 
 ---
 

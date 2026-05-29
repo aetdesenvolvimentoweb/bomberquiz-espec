@@ -143,20 +143,36 @@ HTTP Request
 - RBAC simples por papel: `admin`, `partner`, `client`. Decoração por rota: `requireRole("admin")`.
 - Admins detectados na primeira autenticação contra whitelist em `config/admin-whitelist.ts` — promoção automática (ADR-0005).
 
-### Modelo de dados (esboço inicial)
+### Modelo de dados (visão conceitual)
 
-> Detalhamento e migrations vão no repo do backend. Esta é a visão conceitual.
+> **O schema canônico são as migrations Drizzle no repo `bomberquiz-api`** (tarefa em `docs/tarefas.md`). Esta lista é a visão conceitual consolidada a partir dos RFs em `docs/rf/*.md` — mantida sincronizada com eles, não com a implementação. Campos abaixo são indicativos, não exaustivos.
 
-- `users` — id, name, email (unique), phone, dob, sex, password_hash, avatar_url, email_verified_at, role, created_at.
-- `axes` — id, name (unique). _Eixos Temáticos._
-- `subjects` — id, axis_id, name, source, expected_question_count, created_at.
-- `questions` — id, subject_id, statement, options (jsonb), correct_options, justification, source_reference, image_url, status, author_id, created_at.
-- `question_stats` — question_id, correct_count, wrong_count, last_updated.
-- `quizzes` — id, user_id, scope (enum), config (jsonb), started_at, finished_at, score.
-- `quiz_questions` — quiz_id, question_id, user_answer, correct, time_spent_ms.
-- `subscriptions` — id, user_id, plan, status, started_at, expires_at.
-- `subscription_donations` — id, beneficiary_id, granted_by_id, period_days, reason_category, reason_note, granted_at.
-- `payments` — id, user_id, subscription_id, gateway, gateway_id, amount, status, paid_at.
+**Identidade e conta**
+- `users` — id, name, email (unique, case-insensitive), `pending_email?`, phone, dob, sex, password_hash, avatar_url, email_verified_at, role (`client`/`partner`/`admin`), status (`active`/`inactive`/`deleted`), consent_version, consent_accepted_at, trial_used_at, last_login_at, deactivated_at?, deleted_at?, email_changed_at?, created_at. _Anonimização LGPD em PROF-RF-009; e-mail anonimizado via `sha256(SALT_GLOBAL + email)`._
+- `sessions` — id, user_id, last_seen_at, expires_at, revocation_reason? (`session_replaced`/`logout`/`password_reset`), created_at. _Política de sessão única, PROF-RF-010._
+- Tokens de **verificação de e-mail**, **recuperação de senha** e **confirmação de troca de e-mail** — geridos pelo Better-Auth onde possível (ver ADR-0018); armazenados como hash, uso único, com expiração própria (AUTH-RF-002/006, PROF-RF-004).
+
+**Conteúdo (Eixo → Matéria → Pergunta)**
+- `axes` — id, name (unique, case-insensitive), description?, status (`active`/`archived`), created_at, archived_at?.
+- `subjects` — id, axis_id (FK), name (unique no eixo), official_source?, tap_weight (int ≥ 0), status, created_at, archived_at?.
+- `questions` — id, subject_id (FK), statement, alternatives (4 strings), correct_index (0..3), explanation, source_reference?, image_url?, status (`draft`/`pending_review`/`published`/`archived`), author_id (FK users), reviewed_by?, reviewed_at?, rejection_reason?, difficulty_level (`unrated`/`easy`/`medium`/`hard`), difficulty_recomputed_at?, stats_reset_at?, created_at, updated_at, published_at?, archived_at?.
+- `question_stats` — question_id (PK/FK), total_answers, correct_count, last_updated. _Base do `accuracy` e do job de dificuldade (CONT-RF-017)._
+
+**Quiz e desempenho**
+- `quiz_sessions` — id, user_id, mode (`tap_simulation`/`free_subject`/`free_axis`), scope_id?, total_questions, timer_enabled, time_limit_seconds?, explanation_mode (`after_each`/`at_end`), status (`in_progress`/`finished`/`expired`/`abandoned`), correct_count, answered_count, started_at, finished_at?.
+- `quiz_session_questions` — id, quiz_session_id (FK), question_id (FK), position (1..N), **snapshot** (statement/alternatives/correct_index/explanation/source_reference no momento do sorteio), submitted_index?, is_correct?, answered_at?.
+- `user_subject_stats` (agregado materializado) — user_id, subject_id, total_answers, correct_answers, last_answered_at, stats_reset_at?. _Estatística por eixo é derivada em runtime._
+
+**Assinaturas, cortesias e financeiro**
+- `subscription_plans` — id, slug (`monthly`/`quarterly`/`semiannual`/`annual`), name, duration_days, pix_price (centavos), card_price (centavos), max_installments, is_active, created_at, updated_at.
+- `subscriptions` — id, user_id, plan_id?, source (`trial`/`paid`/`courtesy`), courtesy_id?, payment_id?, start_at, end_at, status (`active`/`expired`/`revoked`/`pending_payment`), created_at.
+- `payments` — id, user_id, plan_id, method (`pix`/`mp_balance`/`card`), gross_amount, discount_amount, net_amount (centavos), coupon_id?, installments, mp_payment_id, mp_status, mp_receipt_url?, status (`pending`/`paid`/`failed`/`refunded`), paid_at?, refunded_at?, failure_reason?, created_at, updated_at.
+- `courtesies` — id, beneficiary_user_id, granted_by_admin_id, days_granted, start_at, end_at, category (`parceria`/`demonstracao`), notes?, revoked_at?, revoked_by_admin_id?, revocation_reason?, created_at.
+- `coupons` — id, code (unique, case-insensitive), discount_type (`percent`/`fixed_cents`), discount_value, valid_from?, valid_until?, max_uses?, used_count, is_active, applies_to_plan_slugs?, created_by_admin_id, created_at.
+- `user_access` — projeção derivada/materializada por usuário: access_status (`active`/`inactive`), active_until, source. _Calculada em SUB-RF-011; consumida por QUIZ-RF-009 e PROF-RF-014._
+
+**Transversal**
+- `audit_log` — schema completo na seção [Audit log](#audit-log) abaixo.
 
 ### Configuração e secrets
 
@@ -198,6 +214,7 @@ Estratégia em duas fases para evitar custo desnecessário no início e ter migr
   - `API_BASE_URL` — URL pública do backend (usado pelo frontend e em redirects MP)
   - `COOKIE_DOMAIN` — vazio na Fase 1; `.bomberquiz.com.br` na Fase 2
   - `MP_WEBHOOK_URL` — `${API_BASE_URL}/webhooks/mercado-pago` (informado ao MP no painel deles)
+  - `SUPPORT_EMAIL` — endereço de suporte exibido em mensagens de erro e e-mails (default `suporte@bomberquiz.com.br`). Canal de suporte do MVP é **e-mail** (WhatsApp adiado, ADR-0012). É o destino indicado em fluxos como reembolso fora da janela de 7 dias (SUB-RF-014), falha de pagamento e portabilidade LGPD sob demanda (ADR-0015).
 - Links em e-mails transacionais (verificação, recuperação, expiração) usam `WEB_ORIGIN`.
 - Mercado Pago aceita atualizar URL do webhook quando migrar para Fase 2 — sem reescrita.
 - Custo da Fase 2: registro `bomberquiz.com.br` no Registro.br (~R$40/ano).
@@ -222,6 +239,56 @@ Defesa em duas camadas, complementando os limites específicos de endpoints sens
 **Limites específicos têm precedência:** quando um endpoint tem rate limit próprio (login = 5 falhas/15min, troca de e-mail = 1/24h, etc.), ele substitui o baseline.
 
 **Fora de escopo do MVP:** proteção contra ataques distribuídos. Cloudflare (que já hospeda o frontend) pode ser configurada como proxy + WAF do backend Fly.io quando necessário.
+
+---
+
+### Jobs agendados
+
+Scheduler **in-process** no backend (ADR-0017). Cada job é um caso de uso em `application/` disparado por `infra/scheduler/`; idempotente; fuso `America/Sao_Paulo`; horários/intervalos em env.
+
+| Job | Cadência | RF | Comportamento |
+|---|---|---|---|
+| Recalcular dificuldade das perguntas | diário 00:00 | CONT-RF-017 | Reclassifica `published` em `unrated`/`easy`/`medium`/`hard`. |
+| Lembretes de expiração de assinatura | diário 09:00 | SUB-RF-007 | E-mails D-7/D-3/D-1 e e-mail final D-0; um por marco. |
+| Expiração e auto-abandono de quiz | a cada 5 min | QUIZ-RF-004 | `expired` por cronômetro; `abandoned` após 24h sem atividade. |
+| Purga de sessões inativas | diário (ex. 03:00) | AUTH-RF-008 | Remove sessões com >7 dias sem uso. |
+| Dump lógico do banco | diário (ex. 04:00) | ADR-0020 | `pg_dump` → Cloudflare R2 (retenção rotativa). |
+
+**Premissa de instância única:** com >1 instância, jobs rodariam em duplicidade — a migração será lock distribuído (`pg_advisory_lock`) ou Fly scheduled machines, localizada em `infra/scheduler/` (mesma premissa do rate limit in-memory).
+
+---
+
+### Backup e recuperação
+
+Dois níveis (ADR-0020):
+- **PITR do Neon** — recuperação point-in-time dentro da janela do tier (curta no free; reavaliar upgrade pago se insuficiente).
+- **Dump lógico agendado** — `pg_dump` diário enviado a um bucket **privado** no Cloudflare R2 (separado das imagens de questões), retenção rotativa (ex.: 7 diários + 4 semanais). Runbook de restauração no repo `bomberquiz-api`.
+
+O dump contém PII e dados financeiros: bucket privado, acesso restrito, tratado sob a mesma base legal LGPD dos dados originais. Perda máxima entre dumps = intervalo de execução; o PITR cobre o intervalo fino enquanto na janela.
+
+---
+
+### E-mails transacionais (catálogo)
+
+Todos enviados via **Resend** (ADR-0012), templates em **React Email**, links compostos com `WEB_ORIGIN`, remetente/responder em `SUPPORT_EMAIL`. Referência consolidada (a fonte de verdade de cada regra continua sendo o RF citado). Contas `inactive`/`deleted` não recebem transacionais de rotina (PROF-RF-007 CA-4) — exceto os **alertas de segurança** e a **confirmação de exclusão**, endereçados ao titular real.
+
+| E-mail | Gatilho | RF | Observação |
+|---|---|---|---|
+| Verificação de e-mail | Cadastro / reenvio | AUTH-RF-002/003 | Token 24h, uso único |
+| Recuperação de senha | Solicitação de reset | AUTH-RF-006 | Token 1h, uso único |
+| Senha alterada (alerta) | Reset ou troca logado | AUTH-RF-007, PROF-RF-003 | Inclui timestamp + IP |
+| E-mail de acesso alterado (alerta) | Troca de e-mail confirmada | PROF-RF-004 | Enviado ao **endereço antigo** |
+| Conta excluída (confirmação) | Exclusão LGPD | PROF-RF-009 | Ao **endereço original**, antes do commit |
+| Pagamento confirmado | Webhook MP `approved` | SUB-RF-004 | Plano, novo `end_at`, link do comprovante MP |
+| Lembrete de expiração | Job 09:00, D-7/D-3/D-1 | SUB-RF-007 | Um por marco; link de checkout |
+| Assinatura expirada (final) | Job 09:00, D-0 | SUB-RF-007 | Único, sem insistência posterior |
+| Cortesia concedida | Admin concede | SUB-RF-008 | "Você recebeu N dias…" |
+| Cortesia revogada | Admin revoga | SUB-RF-010 | Inclui motivo |
+| Reembolso solicitado | Cliente pede reembolso | SUB-RF-014 | Valor + prazo de crédito |
+| Pergunta aprovada | Admin aprova | CONT-RF-015 | "aprovada com alterações" se houve edição |
+| Pergunta precisa de ajustes | Admin rejeita | CONT-RF-016 | Motivo na íntegra + link de reedição |
+
+Falha de envio (Resend indisponível) fica em log; jobs de e-mail são idempotentes e não reenviam duplicado no mesmo marco/dia.
 
 ---
 
@@ -287,6 +354,7 @@ Tabela transversal referenciada por todos os módulos para auditoria de ações 
 - **Sem PII em `payload_summary`** — apenas IDs (referências). Textos livres como motivo de rejeição/revogação são permitidos por serem do autor da ação, não snapshot de terceiros.
 - **Retenção indefinida no MVP** — volume baixo justifica não purgar. Reavaliar partitioning mensal quando crescer.
 - **Entradas referentes a usuários anonimizados (PROF-RF-009)** permanecem — o `target_id` continua apontando para o `users.id`, que existe com PII zerada.
+- **`ip_address`/`user_agent` são PII** e sobrevivem à anonimização da conta (ficam no log, não na tabela `users`). Por isso: (a) a **política de privacidade** deve declarar a coleta de IP para fins de segurança/auditoria e a base legal (legítimo interesse); (b) define-se um **expurgo desses dois campos após 12 meses** (job de manutenção, ADR-0017) — `created_at`, `actor_id`, `action` e `target_*` permanecem para a trilha de auditoria, mas IP e user-agent são zerados. Esse prazo é o único ponto em que a "retenção indefinida" do log tem exceção.
 
 ---
 
@@ -334,6 +402,7 @@ bomberquiz-web/
 
 - Gerado a partir do `openapi.json` do backend (ex.: `openapi-fetch` + `openapi-typescript`).
 - Atualização do cliente é uma etapa no CI: baixar a spec do backend deployado em staging e regerar tipos.
+- **Planta do contrato:** [`api.md`](api.md) consolida o inventário de endpoints e as convenções transversais que a spec gerada deve refletir.
 
 ---
 
