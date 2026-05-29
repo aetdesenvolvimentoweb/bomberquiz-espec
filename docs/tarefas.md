@@ -22,13 +22,14 @@
 - [x] 2026-05-28 — Pendências do Módulo 5 resolvidas: assimetria explícita de estatísticas (finished/expired contam não-respondidas como erro; abandoned preserva só o que foi respondido) + auto-abandono após 24h sem atividade (QUIZ-P-02); reset seletivo descartado, total mantido (QUIZ-P-03); UI de cronômetro com toggle/switch principal formalizada em QUIZ-RF-001 (QUIZ-P-06); leaderboard descartado em favor de novo QUIZ-RF-010 — evolução temporal própria do usuário (QUIZ-P-07). P-01/04/05 mantidas conscientemente como pós-MVP.
 - [x] 2026-05-28 — Módulo 6 (Assinaturas e cortesias) — rascunho com SUB-RF-001 a SUB-RF-015 em `docs/rf/subscriptions.md`. Decisões: trial automático de 7 dias após verificação de e-mail (único por usuário); 4 planos (mensal/trimestral/semestral/anual) configuráveis pelo admin; cobrança via PIX, saldo MP e cartão (cartão +10%, parcelável em até 3×); sem recorrência automática no MVP — TAP é cíclico, lembretes D-7/D-3/D-1 + e-mail final no D-0; cortesia (renomeado de "doação") como funcionalidade de primeira classe com 2 categorias (parceria/demonstracao), limite de 10/mês por admin e revogação com motivo obrigatório; cupom de desconto incluído no MVP (SUB-RF-013/015) para marketing inicial; reembolso automático em 7 dias atendendo CDC art. 49 (SUB-RF-014); comprovante via link MP; painel financeiro separa receitas de cortesias (ADR-0006); cálculo de `access_status` consolida trial+paga+cortesia (consumido por QUIZ-RF-009 e PROF-RF-014). Todas as 6 pendências iniciais resolvidas.
 - [x] 2026-05-28 — Renomeação "doação" → "cortesia" propagada em toda a documentação (subscriptions.md, profile.md, requisitos.md, decisoes.md, arquitetura.md). Schema renomeado: tabela `courtesies`, `source=courtesy`, `courtesy_id`. ADR-0006 atualizado.
+- [x] 2026-05-28 — Revisão pré-implementação dos 8 itens identificados: (1) schema do `audit_log` documentado em `arquitetura.md`; (2) formato padronizado de resposta de erro `{ error: { code, message, details?, fields?, request_id } }`; (3) rate limit baseline 60 req/min por IP + 120 req/min por user; (4) estratégia de domínios em duas fases (provisórios `pages.dev`/`fly.dev` → próprios `*.bomberquiz.com.br` no lançamento) com config-driven URLs; (5) Resend confirmado como provedor de e-mail; (6) WhatsApp adiado conscientemente (sem canal ativo no MVP); (7) Política de privacidade + Termos como bloqueio explícito de lançamento (não da implementação); (8) matérias do TAP cadastráveis em runtime — ativar/desativar via CONT-RF-008 absorve o ciclo anual do edital (labels de UI: "Desativar matéria"/"Reativar matéria").
 
 ## A realizar — Próximos passos
 
 - [x] ~~Definir o tipo de aplicação~~ — PWA web mobile-first (ADR-0010).
 - [x] ~~Definir gateway de pagamento~~ — Mercado Pago (ADR-0012).
 - [x] ~~Definir forma de armazenamento~~ — Postgres no Neon, via Drizzle (ADR-0009).
-- [ ] Esboçar fluxos principais detalhados (realizar teste, cadastrar questão, assinar, parceiro ganha assinatura).
+- [x] ~~Esboçar fluxos principais detalhados~~ — coberto pelos CAs de cada RF nos arquivos `docs/rf/*.md`.
 - [ ] **Escrever os módulos de RF restantes:**
   - [x] Módulo 1 — Autenticação e cadastro (`docs/rf/auth.md`).
   - [x] Módulo 2 — Perfil e papéis (`docs/rf/profile.md`).
@@ -41,13 +42,14 @@
 - [ ] Definir contrato OpenAPI inicial (endpoints de auth, quiz, admin).
 - [ ] Definir mecanismo de geração do cliente HTTP no frontend a partir da spec OpenAPI.
 - [x] ~~Resolver questões em aberto na seção final de `docs/requisitos.md`~~ — todas as questões que estavam na lista original foram resolvidas durante a redação dos Módulos 1–6. Pendências específicas residuais ficam nos rodapés dos arquivos `rf/*.md` (códigos `<MOD>-P-NN`).
-- [ ] Listar as matérias **efetivas** do TAP (a partir do edital vigente) e cadastrá-las.
+- [x] ~~Listar as matérias efetivas do TAP~~ — **não-aplicável como tarefa prévia**. O cadastro acontece naturalmente via UI quando o admin estiver no ar (CONT-RF-002/006), e o ciclo do edital (matérias entram/saem a cada ano) é absorvido pela mecânica de ativar/desativar matéria (CONT-RF-008 CA-5).
 - [ ] Criar os dois repositórios no GitHub (`bomberquiz-api`, `bomberquiz-web`).
 - [ ] Bootstrap do `bomberquiz-api` (estrutura de pastas, Bun init, Hono hello-world, Drizzle config, env Zod).
 - [ ] Bootstrap do `bomberquiz-web` (Vite + React, Tailwind, shadcn init, vite-plugin-pwa).
 - [ ] Configurar deploy: Fly.io (api) + Cloudflare Pages (web) + Neon (banco).
-- [ ] Validar provedor de WhatsApp (Cloud API vs Z-API) e e-mail (Resend vs SES).
-- [ ] Redigir política de privacidade e termo de consentimento LGPD a serem aceitos no cadastro.
+- [x] ~~Validar provedor de e-mail~~ — **Resend** confirmado (ADR-0012 atualizado).
+- [ ] Validar provedor de WhatsApp (Cloud API vs Z-API) — adiado conscientemente; WhatsApp não é canal ativo no MVP (só contato declarado). Reavaliar quando virar canal ativo.
+- [ ] **🚩 Bloqueio de lançamento público:** Redigir Política de Privacidade + Termos de Uso (LGPD). Beta privado pode rodar com versão preliminar; contratar advogado especializado para revisão antes da abertura pública. Versionar como `docs/legal/privacidade-vN.md` e `docs/legal/termos-vN.md` (sistema já tem `consent_version` e reaceite em PROF-RF-006).
 - [ ] Especificar fluxo técnico de verificação de e-mail (envio, expiração de token, reenvio).
 
 ## Backlog (sem prioridade definida)

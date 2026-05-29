@@ -114,6 +114,7 @@ Soft-delete reversível: marca eixo como `archived` (ou volta para `active`). Ei
 - **CA-2:** Arquivar eixo que tem matérias **ativas** emite **aviso** (não bloqueia): "Este eixo tem N matérias ativas. Elas continuarão visíveis até serem arquivadas individualmente."
 - **CA-3:** Em sucesso, HTTP 200; `audit_log` registra.
 - **CA-4:** Não há cascata automática para matérias ou perguntas.
+- **CA-5:** **Label da UI:** botões devem dizer **"Desativar eixo"** e **"Reativar eixo"** (mental model do admin), mesmo que internamente o campo `status` use os valores `active`/`archived` por consistência técnica com perguntas (CONT-RF-012).
 
 **Erros previstos:**
 - **E-1:** Eixo não encontrado → HTTP 404.
@@ -188,6 +189,7 @@ Soft-delete reversível. Matéria `archived` não pode receber novas perguntas n
 - **CA-2:** Arquivar matéria com perguntas `published` emite aviso (não bloqueia): "N perguntas dessa matéria deixarão de aparecer em novos quizzes. Respostas históricas permanecem."
 - **CA-3:** Perguntas filhas **não** são automaticamente arquivadas (mantém-se acessíveis para edição, mas não para novos quizzes).
 - **CA-4:** Entrada em `audit_log`.
+- **CA-5:** **Label da UI:** botões devem dizer **"Desativar matéria"** e **"Reativar matéria"** (mental model do admin), mesmo que internamente o campo `status` use `active`/`archived`. Acomoda o ciclo natural do edital — matérias entram e saem a cada ano sem precisar de exclusão definitiva.
 
 ---
 

@@ -115,8 +115,8 @@ A direção de dependência é sempre de fora para dentro: `http → application
 **Contexto:** Sistema precisa de pagamento recorrente, mensageria (verificação/notificação), e-mail transacional e armazenamento de imagens das questões.
 **Decisão (inicial — alguns provedores ainda a validar):**
 - **Pagamentos:** Mercado Pago (PIX + cartão, assinaturas recorrentes, doc em PT-BR, sem custo fixo).
-- **WhatsApp:** WhatsApp Cloud API (Meta) como primeira opção; Z-API como fallback se o onboarding com a Meta for inviável.
-- **E-mail transacional:** Resend (free 3.000 e-mails/mês, DX excelente) ou AWS SES como fallback se custos crescerem.
+- **WhatsApp:** **decisão adiada conscientemente** — no MVP, WhatsApp não é canal ativo (sem OTP, sem recuperação de senha, sem notificações). O número é apenas contato declarado armazenado para uso futuro. Quando virar canal ativo (divulgação/marketing pós-MVP), a escolha será entre Cloud API (Meta) — oficial, gratuito até 1k conversas/mês, exige CNPJ/KYC — e Z-API — não-oficial, paga, setup rápido sem KYC. Decisão depende do status jurídico do negócio na época.
+- **E-mail transacional:** **Resend** confirmado (free 3.000 e-mails/mês cobre o volume estimado do MVP de 300–500 usuários × ~10 e-mails/mês; DX excelente; React Email reaproveita stack do frontend). Migração para SES é localizada na porta `EmailSender` se volume crescer.
 - **Storage de imagens de questões:** Cloudflare R2 (sem cobrança de egress, free 10 GB) — conteúdo estático, sem necessidade de transformações.
 - **Storage de avatares:** ver ADR-0013.
 
