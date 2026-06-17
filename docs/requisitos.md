@@ -147,6 +147,7 @@ Organizados em **6 módulos**, cada um em arquivo próprio sob `docs/rf/`. Ident
 | 4 | Conteúdo (parceiro) | [`rf/content-partner.md`](rf/content-partner.md) | ✅ Rascunho |
 | 5 | Quiz (cliente) | [`rf/quiz.md`](rf/quiz.md) | ✅ Rascunho |
 | 6 | Assinaturas e cortesias | [`rf/subscriptions.md`](rf/subscriptions.md) | ✅ Rascunho |
+| 7 | Geração de questões por IA | [`rf/ai-generation.md`](rf/ai-generation.md) | ✅ Rascunho |
 
 Pendências por módulo (decisões a tomar antes da implementação) ficam no rodapé de cada arquivo, identificadas como `<MODULO>-P-NN`.
 

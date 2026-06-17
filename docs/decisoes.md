@@ -186,6 +186,44 @@ Portabilidade (art. 18, V) **não** é atendida via endpoint no MVP — fica com
 **Decisão:** **Não** emitir NFS-e automaticamente pelo sistema no MVP. Eventual emissão é processo **manual/externo**, conforme o regime tributário da pessoa jurídica quando este for definido. O sistema apenas mantém o histórico de pagamentos e o link de comprovante do MP. Integração com emissor (NFE.io, eNotas, etc.) fica como evolução pós-MVP, atrás de uma porta dedicada se vier.
 **Consequências:** Remove dependência jurídica/tributária do caminho crítico de implementação. **Pendência de negócio/jurídica explícita** registrada em `docs/tarefas.md` como bloqueio a reavaliar antes (ou logo após) o lançamento público, junto da definição de CNPJ/regime. Risco: se a obrigação fiscal existir desde o primeiro pagamento, haverá emissão manual durante a janela inicial.
 
+## 0021 — M7 Geração por IA: escopo, público e limitação a PDFs selecionáveis (2026-06-17)
+
+**Contexto:** O Módulo 7 introduz geração automática de questões via LLM a partir de documentos PDF. Duas decisões imediatas: (a) quem pode usar; (b) quais formatos de PDF são aceitos.
+**Decisão:**
+- **Exclusivo para admins.** Admins têm papel editorial final (publicam direto, sem fila) e são o público natural para curadoria de conteúdo em volume. Abrir para parceiros adicionaria custo de API sem revisão adicional — o workflow do parceiro já exige revisão de conteúdo; adicionar geração de IA tornaria a rastreabilidade de responsabilidade editorial nebulosa.
+- **Apenas PDFs com texto selecionável** (nativos/digitais). PDFs digitalizados/escaneados exigem OCR — tecnologia não presente no stack atual e que adiciona complexidade e custo não justificados para o MVP. Se o PDF não produzir texto extraível, o job falha com mensagem clara orientando o admin a usar o arquivo correto.
+**Consequências:** Escopo claro e controlado. Limitação prática documentada — admins precisam ter a versão digital dos documentos (manuais operacionais, normas técnicas, regulamentos), o que é a norma para documentos oficiais do CBMGO distribuídos digitalmente. Suporte a OCR fica como evolução futura explícita.
+
+## 0022 — Modelo LLM para geração de questões: Claude (Anthropic) (2026-06-17)
+
+**Contexto:** O M7 precisa de um LLM para gerar questões estruturadas em português a partir de texto técnico. Opções avaliadas: Claude (Anthropic), GPT-4o (OpenAI), Gemini (Google).
+**Decisão:** **Claude** (modelo `claude-sonnet-4-6` como padrão), via API da Anthropic. Justificativas: (a) Sonnet 4.6 tem janela de contexto de 200k tokens — suficiente para manuais completos sem chunking na maioria dos casos; (b) qualidade superior em português técnico e em seguir instruções de formato estruturado (JSON estrito); (c) consistência no domínio de educação/concurso; (d) o stack Claude Code já pressupõe familiaridade com a API Anthropic. Sonnet é o default pelo equilíbrio custo/qualidade; `claude-opus-4-8` é alternativa para casos que exijam mais elaboração (AIGEN-P-04).
+**Consequências:** Nova dependência externa: `ANTHROPIC_API_KEY` em `.env`. Custo estimado de R$ 0,50–2,00 por job de 20 questões (Sonnet). Rate limiting de jobs (10/admin/dia, 2 simultâneos globais) controla gasto. Adicionar a chave ao checklist de bootstrap do `bomberquiz-api` e ao runbook de ambientes.
+
+## 0023 — Processamento de jobs de geração: assíncrono in-process (2026-06-17)
+
+**Contexto:** Uma chamada ao LLM com um PDF de 100 páginas pode levar 30–90 segundos. Manter a conexão HTTP aberta durante esse tempo é impraticável (timeouts de load balancer, UX ruim). Opções: SSE no mesmo request; webhook de callback; polling; job assíncrono persistido no banco.
+**Decisão:** **Job assíncrono persistido no banco**, com polling pelo frontend. Fluxo: `POST /admin/ai-generation/jobs` retorna HTTP 202 imediatamente; o worker (mesmo scheduler in-process de ADR-0017) assume o job da fila; o frontend faz poll em `GET /admin/ai-generation/jobs/:id` a cada 3 s. Mesma arquitetura dos outros jobs do scheduler — sem nova infra.
+**Consequências:** Simplicidade operacional (reusa o scheduler já planejado). O polling é aceitável para uso admin (não é user-facing em tempo real). Se o Fly.io restartar durante o processamento, o job fica em `processing` até o timeout de 5 min, quando é marcado como `failed` pelo job de manutenção (idempotente). Alternativas (SSE, WebSocket) ficam como evolução se polling mostrar problema de UX.
+
+## 0024 — PDFs temporários em R2: excluídos após conclusão do job (2026-06-17)
+
+**Contexto:** Os PDFs enviados pelo admin contêm material potencialmente sigiloso ou sob direitos autorais. Não há necessidade de retê-los após o processamento — o texto já foi extraído e as questões geradas. Mantê-los aumenta superfície de exposição e custo de storage.
+**Decisão:** Ambos os PDFs (`reference_pdf` e `material_pdf`) são **excluídos do R2 imediatamente** após o job atingir `status=completed` ou `status=failed` (seja por conclusão normal, por erro ou por timeout). Não há "retry com o mesmo PDF" — novo job exige novo upload (AIGEN-P-02).
+**Consequências:** Custo de storage ~zero (arquivos ficam no R2 por minutos a no máximo 5 min de timeout). Conformidade com princípio de minimização de dados (LGPD art. 6º, III). O `material_name` (nome original do arquivo) é preservado nos metadados do job para referência histórica, mas o conteúdo não.
+
+## 0025 — Cache de exemplos de prova de referência entre jobs (2026-06-17)
+
+**Contexto:** O mesmo PDF de prova de referência (ex.: prova real do TAP 2024) tende a ser reutilizado em múltiplos jobs de geração — um para cada matéria do edital. A cada job, o worker re-baixava o arquivo do R2, re-extraía as questões-exemplo e as incluía no prompt: trabalho idêntico pago múltiplas vezes em tempo de processamento e em tokens LLM.
+**Decisão:** Tabela `ai_reference_exams` armazena as questões-exemplo extraídas indexadas por SHA-256 do conteúdo do PDF. O worker computa o hash ao baixar o arquivo do R2 e faz lookup antes de iniciar a extração. Cache hit → reutiliza os exemplos diretamente, atualiza `last_used_at`. Cache miss → extrai, persiste e reutiliza nas próximas ocorrências. Os PDFs continuam excluídos do R2 conforme ADR-0024 — apenas o texto extraído (estrutura leve em JSONB) fica no banco. Campo `reference_exam_id` em `ai_generation_jobs` mantém rastreabilidade de qual cache foi usado.
+**Consequências:** Elimina custo de reprocessamento para provas reutilizadas sem mudança na UX. Dados armazenados são fragmentos de texto extraído (não o PDF), sem novo impacto de LGPD além do já tratado. Purga de entradas com `last_used_at` muito antigo pode ser adicionada ao job de manutenção se necessário.
+
+## 0026 — Prompt caching via `cache_control` na API Claude (2026-06-17)
+
+**Contexto:** Em jobs com material extenso, o worker divide o material em múltiplos chunks e faz várias chamadas ao LLM (AIGEN-RF-004 CA-6). Em cada chamada, o bloco `[system prompt + exemplos da prova]` é idêntico e representa percentual significativo dos tokens de entrada. A API Claude suporta `cache_control: { type: "ephemeral" }` em blocos de mensagem, permitindo reutilizar o prefixo já computado pelo modelo.
+**Decisão:** Marcar o bloco `[system prompt + exemplos da prova de referência]` com `cache_control: { type: "ephemeral" }` em todas as chamadas ao LLM feitas pelo worker M7. Tokens em cache custam ~10% do preço normal de tokens de entrada após o primeiro hit. TTL do cache é de 5 minutos — suficiente para cobrir as chamadas de um único job multi-chunk processado em sequência. O campo `cached_tokens` em `ai_generation_jobs` registra quantos tokens foram lidos do cache (via `usage.cache_read_input_tokens` na resposta da API).
+**Consequências:** Redução de custo proporcional ao número de chunks e ao tamanho relativo do cabeçalho. Jobs de único chunk beneficiam-se apenas em cenários de burst (múltiplos jobs processando cabeçalho semelhante em < 5 min). Implementação mínima — apenas o campo `cache_control` no request; sem mudança de lógica de negócio.
+
 ## 0020 — Backup e recuperação do Postgres: PITR Neon + dump lógico (2026-05-29)
 
 **Contexto:** O produto guarda PII e histórico financeiro (pagamentos, cortesias, auditoria). Não havia política de backup. O Neon free tier tem janela curta de history (PITR) e nenhum backup independente do provedor.
