@@ -73,11 +73,11 @@ Submissão de perguntas (até 50 rascunhos simultâneos); edição de publicadas
 ### M5 — Quiz
 Três modos: **simulado TAP** (proporcional ao `tap_weight`, até 60 questões), **livre por matéria** e **livre por eixo**. Cronômetro opcional (1–5 min/questão, padrão 3 min). Sessão online-only, sem pause/resume. Estatísticas de desempenho por matéria, histórico de quizzes e timeline de evolução temporal. Reset total preserva histórico de sessões concluídas.
 
-### M7 — Geração de Questões por IA
-Exclusivo para admins. Admin faz upload de dois PDFs: uma prova real do TAP (referência de estilo e complexidade) e o material de estudo (fonte do conteúdo). Escolhe a matéria de destino e a quantidade de questões (1–30). O sistema processa de forma assíncrona via Claude API (ADR-0022): extrai texto dos PDFs, identifica exemplos de questões na prova de referência, monta o prompt e gera as questões em JSON estruturado. O admin revisa questão a questão — pode editar, aprovar (vai direto para `published`) ou descartar individualmente ou em lote. Aceita apenas PDFs com texto selecionável (ADR-0021). **Otimizações de custo:** exemplos extraídos da prova de referência são cacheados em banco por hash do arquivo — o mesmo PDF de referência não é reprocessado em jobs futuros (ADR-0025); o bloco `[system + exemplos]` do prompt usa `cache_control` na API Claude para reduzir custo em jobs multi-chunk (ADR-0026).
-
 ### M6 — Assinaturas
 Checkout via Mercado Pago (PIX, saldo MP, cartão em até 3×); sem recorrência automática no MVP. Lembretes de expiração por e-mail (D-7, D-3, D-1, D-0). Cortesias de assinatura (parceria/demonstracao) administradas com limite de 10/mês. Cupons de desconto. Reembolso automático em até 7 dias (CDC art. 49). Painel financeiro admin com separação entre receitas de vendas e de cortesias.
+
+### M7 — Geração de Questões por IA
+Exclusivo para admins. Admin faz upload de dois PDFs: uma prova real do TAP (referência de estilo e complexidade) e o material de estudo (fonte do conteúdo). Escolhe a matéria de destino e a quantidade de questões (1–30). O sistema processa de forma assíncrona via Claude API (ADR-0022): extrai texto dos PDFs, identifica exemplos de questões na prova de referência, monta o prompt e gera as questões em JSON estruturado. O admin revisa questão a questão — pode editar, aprovar (vai direto para `published`) ou descartar individualmente ou em lote. Aceita apenas PDFs com texto selecionável (ADR-0021). **Otimizações de custo:** exemplos extraídos da prova de referência são cacheados em banco por hash do arquivo — o mesmo PDF de referência não é reprocessado em jobs futuros (ADR-0025); o bloco `[system + exemplos]` do prompt usa `cache_control` na API Claude para reduzir custo em jobs multi-chunk (ADR-0026).
 
 > Referência: `docs/rf/` (um arquivo por módulo) · `docs/api.md` (inventário de endpoints)
 
