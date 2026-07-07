@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status atual do projeto
 
-**Fase: Especificação de requisitos — stack já definida.** Ainda não há código (o projeto será dividido em dois repositórios separados, ver abaixo). A escrita dos RFs detalhados e o bootstrap dos repositórios são os próximos passos.
+**Fase: Implementação inicial em andamento.** Os dois repositórios já existem e têm código (`bomberquiz-api` com autenticação/perfil funcionando e deployado; `bomberquiz-web` com as telas correspondentes). `bomberquiz-api` já está em produção no Fly.io (`bomberquiz-api.fly.dev` + `bomberquiz-api-staging.fly.dev`), com Neon como banco. `bomberquiz-web` ainda não foi implantado no Cloudflare Pages. Ver `docs/tarefas.md` para o estado detalhado.
 
 Ao iniciar uma sessão, leia primeiro:
 - [docs/requisitos.md](docs/requisitos.md) — especificação de requisitos
@@ -15,7 +15,7 @@ Ao iniciar uma sessão, leia primeiro:
 
 ## Stack e topologia (resumo)
 
-- **Dois repositórios independentes no GitHub:** `bomberquiz-api` (backend) e `bomberquiz-web` (frontend). Este diretório atual contém **apenas a documentação compartilhada** — o código irá para os outros dois repos quando forem criados.
+- **Dois repositórios independentes no GitHub:** `bomberquiz-api` (backend) e `bomberquiz-web` (frontend), ambos já criados e com código. Este diretório atual contém **apenas a documentação compartilhada**.
 - **Backend:** Bun + Hono + Drizzle + Postgres (Neon) + Better-Auth, em arquitetura hexagonal. Hospedado no Fly.io.
 - **Frontend:** Vite + React + Tailwind + shadcn/ui, PWA mobile-first. Hospedado em Cloudflare Pages.
 - **Contrato entre eles:** OpenAPI gerado pelo backend (`@hono/zod-openapi`), consumido pelo frontend via cliente HTTP type-safe.
@@ -33,7 +33,7 @@ Toda a documentação do projeto (requisitos, decisões, comentários em código
 
 ## Convenções de trabalho
 
-- **Código de implementação ainda não.** Os repositórios `bomberquiz-api` e `bomberquiz-web` ainda não existem. Se o usuário pedir algo que pareça exigir código de produção, confirme se chegou o momento de criar os repos.
+- **Código de implementação já em andamento** nos repositórios `bomberquiz-api` e `bomberquiz-web` (fora deste diretório). Este diretório (`requisitos/`) continua sendo só a documentação compartilhada — não é onde o código mora.
 - **Atualize `docs/tarefas.md` ao concluir trabalho não-trivial.** Marque o que foi feito e adicione novas pendências descobertas, em vez de deixá-las só no histórico da conversa.
 - **Decisões com trade-off vão para `docs/decisoes.md`** (formato ADR curto: contexto, decisão, consequências). Não enterre decisões em comentários de código ou em memórias.
 - **Memória vs. documentação:** fatos do projeto que qualquer futura sessão precisa saber vão em `docs/`. Memórias persistentes (preferências do usuário, feedback recorrente) ficam no sistema de memória do Claude. Não duplique.

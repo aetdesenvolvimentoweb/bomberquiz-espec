@@ -414,11 +414,11 @@ bomberquiz-web/
 - **Produção:** branch `main` → deploy automático após CI verde.
 
 ### CI/CD (GitHub Actions)
-- `bomberquiz-api`: lint → typecheck → unit → integration (contra branch Neon de teste) → deploy.
-- `bomberquiz-web`: lint → typecheck → unit → build → e2e (opcional) → deploy.
+- `bomberquiz-api`: **implementado em 2026-07-07** (`.github/workflows/deploy.yml`) — hoje roda `typecheck` → `deploy` (push em `main` → app produção, push em `staging` → app staging via `flyctl deploy`); `lint` → unit → integration ficam como próximo passo, pendentes até essas ferramentas existirem no repo (ver `tarefas.md`).
+- `bomberquiz-web`: lint → typecheck → unit → build → e2e (opcional) → deploy. Ainda não implementado.
 
 ### Custos esperados (free tiers no início)
-- Fly.io: $0 (3 VMs pequenas).
+- Fly.io: $0 (2 VMs pequenas — 1 máquina por app, `bomberquiz-api` + `bomberquiz-api-staging`; ver ADR-0027 sobre reduzir do padrão HA de 2 máquinas/app do Fly).
 - Neon: $0 (0.5 GB).
 - Cloudflare Pages: $0 (sites ilimitados).
 - Cloudflare R2: $0 (até 10 GB).
