@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status atual do projeto
 
-**Fase: Implementação inicial em andamento.** Os dois repositórios já existem e têm código (`bomberquiz-api` com autenticação/perfil funcionando e deployado; `bomberquiz-web` com as telas correspondentes). `bomberquiz-api` já está em produção no Fly.io (`bomberquiz-api.fly.dev` + `bomberquiz-api-staging.fly.dev`), com Neon como banco. `bomberquiz-web` ainda não foi implantado no Cloudflare Pages. Ver `docs/tarefas.md` para o estado detalhado.
+**Fase: Implementação inicial em andamento.** Os dois repositórios já existem e têm código (`bomberquiz-api` com autenticação/perfil funcionando e deployado; `bomberquiz-web` com as telas correspondentes). `bomberquiz-api` já está em produção no Fly.io (`bomberquiz-api.fly.dev` + `bomberquiz-api-staging.fly.dev`), com Neon como banco. `bomberquiz-web` já está em produção no Cloudflare Pages (`bomberquiz-web.pages.dev`) desde 2026-07-08; falta apenas o ambiente de staging (nenhum dos dois repos tem branch `staging` criada ainda). Ver `docs/tarefas.md` para o estado detalhado.
 
 Ao iniciar uma sessão, leia primeiro:
 - [docs/requisitos.md](docs/requisitos.md) — especificação de requisitos
