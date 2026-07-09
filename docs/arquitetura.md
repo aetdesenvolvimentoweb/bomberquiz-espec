@@ -207,6 +207,9 @@ Estratégia em duas fases para evitar custo desnecessário no início e ter migr
 - Backend: `api.bomberquiz.com.br` (CNAME para Fly)
 - Cookie de sessão: `Domain=.bomberquiz.com.br; SameSite=Lax; Secure; HttpOnly` (mesma origem, mais seguro contra CSRF)
 - CORS: backend permite `Origin: https://app.bomberquiz.com.br`
+- **E-mail:** transacional (Resend) verificado em `send.bomberquiz.com.br` (SPF/DKIM/MX próprios, sem conflitar com a raiz); caixa humana de suporte (`suporte@bomberquiz.com.br`, Hostinger Business) com MX na raiz do domínio. Detalhes e justificativa em ADR-0028.
+
+**Status (2026-07-09):** `bomberquiz.com.br` registrado (confirmação de registro em andamento) e `bomberquiz.com` registrado como redirect 301 permanente para o `.br` — ver ADR-0028. DNS de e-mail e migração das URLs de Fase 2 ficam pendentes da confirmação do `.br` (plano em `tarefas.md`).
 
 **Implicações arquiteturais (válidas desde a Fase 1):**
 - URLs **em variáveis de ambiente**, nunca hardcoded. Variáveis chave:
