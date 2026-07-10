@@ -88,17 +88,18 @@
   - Achado sem correção (decisão de produto, não bug óbvio): `change-password` (troca de senha logado) não dispara alerta de segurança por e-mail — só o fluxo de reset via token dispara. O comentário no código sugere o contrário; alinhar antes de decidir se corrige.
   - Achado sem correção (não bloqueia nada): `rateLimitByUser` em `rate-limit.middleware.ts` está implementado mas nenhuma rota o usa — código morto.
   - ~~Adicionar `lint` e testes ao pipeline de CI~~ — **pendência já estava desatualizada**: `test:unit`/`test:integration`/`test:e2e` já rodavam no CI (`.github/workflows/deploy.yml`) desde o bootstrap do repo, só a cobertura de fato é que era mínima (4 testes). `lint` continua não configurado — pendência residual real.
-
-## Próximo passo — Domínio e e-mail (Fase 2 antecipada)
-
-- [ ] **📌 Domínios registrados pelo usuário:** `bomberquiz.com.br` (confirmação de registro em andamento) e `bomberquiz.com` (registrado, será redirect 301 permanente para o `.br`). Decisão e justificativa em ADR-0028. Ordem de execução ao confirmar o `.br`:
-  1. [ ] DNS do subdomínio `send.bomberquiz.com.br` (SPF/DKIM/MX fornecidos pelo Resend) — verificação de domínio de envio, isolado da raiz.
-  2. [ ] MX da raiz `bomberquiz.com.br` → Hostinger Business Email, criando a caixa real `suporte@bomberquiz.com.br` — resolve a pendência de `SUPPORT_EMAIL` real (linha abaixo).
-  3. [ ] Atualizar `EMAIL_FROM` do sandbox `onboarding@resend.dev` (paliativo desde 2026-07-08) para o endereço verificado em `send.bomberquiz.com.br`.
-  4. [ ] Configurar o redirect 301 de `bomberquiz.com` → `bomberquiz.com.br`.
-  5. [ ] Só então migrar `WEB_ORIGIN`/`API_BASE_URL`/`COOKIE_DOMAIN` para os valores de Fase 2 (`app.bomberquiz.com.br`/`api.bomberquiz.com.br`) já previstos em `arquitetura.md`.
+- [x] 2026-07-10 — **Fase 2 do domínio (`bomberquiz.com.br`) migrada e validada em produção**, seguindo `runbook-dominio-cloudflare.md` (Passos 0-7; ADR-0028):
+  1. [x] Nameservers do domínio apontados para o Cloudflare (via hPanel da Hostinger, não Registro.br diretamente); zona ativa.
+  2. [x] DNS de `send.bomberquiz.com.br` (Resend) verificado; MX da raiz → Hostinger Business Email, `suporte@bomberquiz.com.br` funcionando; `EMAIL_FROM` atualizado do sandbox `onboarding@resend.dev` para `send.bomberquiz.com.br`.
+  3. [x] Frontend: `app.bomberquiz.com.br` como custom domain no Cloudflare Pages (canônico); `www.bomberquiz.com.br` e `www.bomberquiz.com` como redirect 301 — **divergência resolvida com o usuário**: pedido original mencionava `www.` como origem, mas a arquitetura documentada usa `app.`; decisão foi manter `app.` como real e `www.` só como redirect (aditivo à ADR-0028, não a contradiz).
+  4. [x] Backend: `api.bomberquiz.com.br` certificado via `flyctl certs add`/`certs show` (Let's Encrypt, `Ready`), registro DNS-only no Cloudflare (proxy desligado, evita conflito com o desafio ACME do Fly).
+  5. [x] Redirect `bomberquiz.com` → `bomberquiz.com.br` via segunda zona Cloudflare + Redirect Rule, cobrindo raiz, `www.` **e `app.bomberquiz.com`** (descoberto durante a validação: alguém digitando `app.bomberquiz.com` por engano batia em "site não encontrado" em vez de redirecionar — sem registro DNS pra esse host na zona `.com`; corrigido com A fictício proxied + regra ampliada, preservando path/query string).
+  6. [x] `WEB_ORIGIN`/`API_BASE_URL`/`COOKIE_DOMAIN` migrados via `fly secrets set -a bomberquiz-api` para os valores de Fase 2. CORS já é dinâmico a partir de `WEB_ORIGIN` (`api/src/http/app.ts` + `trustedOrigins` em `better-auth.ts`) — nenhum código precisou mudar ali.
+  - **🐛 Bug encontrado e corrigido:** três links enviados por e-mail (verificação de cadastro, redefinição de senha, confirmação de troca de e-mail) eram montados em `better-auth.ts`/`request-email-change.usecase.ts` com paths em inglês (`/verify-email`, `/reset-password`, `/profile/email/confirm`) que não existiam no `router.tsx` do frontend (rotas em português: `/verificar-email`, `/redefinir-senha`, `/perfil/email/confirmar`) — 404 do React Router ao clicar. Decisão: como as páginas de destino renderizam conteúdo e o usuário permanece nelas (não é redirect silencioso), a correção foi no backend (paths agora em português), mantendo o `router.tsx` como está.
+  - **🐛 Bug encontrado e corrigido:** após migrar os secrets da API, o bundle de produção do `bomberquiz-web` continuou apontando pro `bomberquiz-api.fly.dev` antigo — causa: `VITE_API_BASE_URL` do build de produção está hardcoded em `web/.github/workflows/deploy.yml` (env do step "Build (produção)"), não é lida do painel do Cloudflare Pages (que só recebe o `dist` já pronto via `wrangler-action`, não builda nada). Corrigido trocando o valor pra `https://api.bomberquiz.com.br` + push em `main` (commit `a072e6f`), validado baixando o bundle novo e conferindo a string. Staging (`bomberquiz-api-staging.fly.dev`) não faz parte desta migração e ficou intacto.
+  - **Pendência residual:** webhook do Mercado Pago (`arquitetura.md:219`) não foi atualizado para `api.bomberquiz.com.br` — integração ainda não desenvolvida, fica para quando for implementada.
 - [ ] **⚠️ Deploy pendente:** a correção do bug de "esqueci minha senha" (endpoint errado, ver acima) está só no repo local — fazer o deploy em produção (`bomberquiz-api`) para os usuários reais serem beneficiados.
 
 ## Backlog (sem prioridade definida)
 
-- _Vazio._
+- [ ] Atualizar webhook do Mercado Pago para `https://api.bomberquiz.com.br/webhooks/mercado-pago` quando a integração for desenvolvida (ver Fase 2 do domínio acima).
