@@ -45,6 +45,8 @@ bomberquiz-api/
 │   │   ├── user/
 │   │   │   ├── user.entity.ts
 │   │   │   ├── user.repository.port.ts
+│   │   │   ├── phone.vo.ts              # Value object, valida via IPhoneValidator (ADR-0030)
+│   │   │   ├── phone-validator.port.ts
 │   │   │   └── user.errors.ts
 │   │   ├── question/
 │   │   ├── quiz/
@@ -75,6 +77,8 @@ bomberquiz-api/
 │   │   │   └── whatsapp.adapter.ts
 │   │   ├── email/
 │   │   │   └── resend.adapter.ts
+│   │   ├── phone/
+│   │   │   └── regex-phone-validator.adapter.ts   # implementa IPhoneValidator (ADR-0030)
 │   │   └── storage/
 │   │       ├── r2.adapter.ts            # imagens de questões
 │   │       └── cloudinary.adapter.ts    # avatares

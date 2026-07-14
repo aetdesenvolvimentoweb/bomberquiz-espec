@@ -18,7 +18,7 @@
 | Tamanho mínimo da senha | 10 caracteres |
 | Complexidade da senha | ao menos 1 letra e 1 número; recusar senhas em lista de "piores 10.000" (via biblioteca ou serviço como HIBP API) |
 | Tamanho máximo do nome | 120 caracteres |
-| Formato do telefone | DDI 55 + DDD + número, total 13 dígitos (`55619XXXXXXXX`) — formato E.164 |
+| Formato do telefone | DDD + número, sem DDI (ADR-0029). **Celular:** 11 dígitos, 3º dígito `9` (`62999999999`). **Fixo:** 10 dígitos, 3º dígito `2-5` (`6233334444`) — WhatsApp Business roda em linha fixa. DDD validado contra a lista oficial da Anatel; DDI fica a cargo do módulo de envio quando existir (ADR-0030) |
 | Expiração do token de verificação de e-mail | 24 horas |
 | Expiração do token de recuperação de senha | 1 hora |
 | Duração da sessão | 7 dias (cookie persistente); refresh automático a cada uso |
@@ -42,7 +42,7 @@ Visitante preenche formulário de cadastro com seus dados pessoais, aceita os te
 |---|---|---|
 | Nome completo | Sim | 3–120 caracteres, ao menos um espaço (nome + sobrenome) |
 | E-mail | Sim | Formato válido, único no sistema (case-insensitive) |
-| Telefone (WhatsApp) | Sim | E.164 (`55…`), 13 dígitos |
+| Telefone (WhatsApp) | Sim | DDD + número, sem DDI; celular (11 dígitos) ou fixo (10 dígitos), estrutura validada de verdade (ver regras gerais, ADR-0030) |
 | Data de nascimento | Sim | Data válida; idade ≥ 18 anos (idade mínima para ingresso no CBMGO) |
 | Sexo | Sim | Uma das opções: `Masculino`, `Feminino`, `Prefere não informar` |
 | Senha | Sim | Regras gerais acima |
@@ -58,8 +58,9 @@ Visitante preenche formulário de cadastro com seus dados pessoais, aceita os te
 
 **Erros previstos:**
 - **E-1:** E-mail já cadastrado → HTTP 409, mensagem genérica "Não foi possível criar a conta. Verifique seus dados ou tente recuperar a senha."
-- **E-2:** Qualquer validação Zod falha → HTTP 422 com lista de campos inválidos.
+- **E-2:** Qualquer validação Zod falha (sintaxe) → HTTP 422 com lista de campos inválidos.
 - **E-3:** Aceite LGPD não marcado → HTTP 422.
+- **E-4:** Telefone com 10/11 dígitos mas estruturalmente inválido (DDD inexistente, celular sem `9`, fixo com dígito fora de `2-5`) → HTTP 422 `{ code: "invalid_phone" }` (validação de domínio, não de sintaxe — ADR-0030).
 
 ---
 
