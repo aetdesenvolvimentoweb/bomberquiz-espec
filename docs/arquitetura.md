@@ -295,7 +295,7 @@ Todos enviados via **Resend** (ADR-0012), templates em **React Email**, links co
 | Pergunta aprovada | Admin aprova | CONT-RF-015 | "aprovada com alterações" se houve edição |
 | Pergunta precisa de ajustes | Admin rejeita | CONT-RF-016 | Motivo na íntegra + link de reedição |
 
-Falha de envio (Resend indisponível) fica em log; jobs de e-mail são idempotentes e não reenviam duplicado no mesmo marco/dia.
+Falha de envio (Resend indisponível ou erro de API) é detectada, tentada novamente (até 3× com backoff curto) e fica em log estruturado quando esgota as tentativas — ver ADR-0031. Jobs de e-mail agendados (lembretes, expiração) devem ser idempotentes e não reenviar duplicado no mesmo marco/dia quando implementados (scheduler ainda não existe — ver `tarefas.md`).
 
 ---
 
