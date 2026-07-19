@@ -18,10 +18,10 @@
 |---|---|
 | Modos de quiz suportados no MVP | `tap_simulation`, `free_subject`, `free_axis` |
 | Tamanho do quiz livre (`free_subject`/`free_axis`) | escolha do cliente entre **10, 20, 30 ou 50** questões |
-| Tamanho do simulado TAP | soma dos `tap_weight` das matérias com `status=active` e `tap_weight > 0`. A prova real do TAP tem **50 questões**, então a soma dos pesos deve totalizar ~50. Teto defensivo de **60** questões (folga para variação do edital): se a soma exceder, o sistema bloqueia o início com aviso ao admin de revisar os `tap_weight` (provável erro de cadastro) |
+| Tamanho do simulado TAP | soma dos `tap_weight` dos eixos com `status=active` e `tap_weight > 0`. A prova real do TAP tem **50 questões**, então a soma dos pesos deve totalizar ~50. Teto defensivo de **60** questões (folga para variação do edital): se a soma exceder, o sistema bloqueia o início com aviso ao admin de revisar os `tap_weight` (provável erro de cadastro) |
 | Cronômetro | opcional, **tempo total**. Padrão = 3 minutos × nº de questões. Ajustável pelo cliente entre 1–5 min/questão |
 | Modo de exibição da justificativa | `after_each` ou `at_end` (escolha do cliente ao iniciar o quiz) |
-| Mínimo de questões publicadas para iniciar quiz | 5 (modos livres); para simulado TAP, ao menos 1 questão em cada matéria com `tap_weight > 0` |
+| Mínimo de questões publicadas para iniciar quiz | 5 (modos livres); para simulado TAP, ao menos 1 questão em cada eixo com `tap_weight > 0` |
 | Cooldown / não-repetição de questões | **sem** cooldown no MVP — sorteio uniforme entre `status=published` |
 | Filtro por nível de dificuldade no sorteio | **não** disponível no MVP |
 | Limite de quizzes simultâneos por cliente | 1 (qualquer iniciar enquanto há um `in_progress` encerra o anterior como `abandoned`) |
@@ -60,14 +60,14 @@ Cliente define modo, escopo e preferências; sistema sorteia as questões e abre
   ```
   UI: na tela de iniciar quiz, `timer_enabled` é um **toggle/switch principal** ("Cronômetro: ligado/desligado"). Quando ligado, expõe o slider de tempo por questão; quando desligado, oculta o slider. Garante que o usuário perceba claramente que cronômetro é opcional.
 - **CA-2:** Validações:
-  - `tap_simulation`: exige ao menos 1 questão `published` em cada matéria `active` com `tap_weight > 0`. Caso contrário → E-1 com lista de matérias sem questões. Se a soma dos `tap_weight` exceder o teto de 60 (regras gerais) → E-6 (provável erro de cadastro de peso).
+  - `tap_simulation`: exige ao menos 1 questão `published` em cada eixo `active` com `tap_weight > 0` (somando todas as matérias ativas do eixo). Caso contrário → E-1 com lista de eixos sem questões. Se a soma dos `tap_weight` exceder o teto de 60 (regras gerais) → E-6 (provável erro de cadastro de peso).
   - `free_subject`: matéria deve estar `active` e ter ao menos 5 questões `published`. Senão → E-2.
   - `free_axis`: eixo deve estar `active` e ter ao menos 5 questões `published` somando todas as matérias. Senão → E-3.
   - `size` ∈ {10, 20, 30, 50} para os modos livres.
 - **CA-3:** Sorteio:
-  - `tap_simulation`: para cada matéria com `tap_weight > 0`, sorteia exatamente `tap_weight` questões. Total = soma dos pesos. Ordem das questões é aleatorizada após o sorteio (não agrupa por matéria).
+  - `tap_simulation`: para cada eixo com `tap_weight > 0`, sorteia exatamente `tap_weight` questões dentre as questões `published` de todas as matérias ativas daquele eixo (distribuição entre as matérias do eixo é uniforme, já que a matéria não carrega peso próprio). Total = soma dos pesos dos eixos. Ordem das questões é aleatorizada após o sorteio (não agrupa por eixo/matéria).
   - `free_subject`: sorteia `size` questões da matéria escolhida.
-  - `free_axis`: sorteia `size` questões distribuídas entre as matérias do eixo proporcionalmente aos `tap_weight` (ou uniforme se todas tiverem peso 0).
+  - `free_axis`: sorteia `size` questões distribuídas uniformemente entre as matérias ativas do eixo.
   - Em todos os modos, ordem das **alternativas** de cada questão é aleatorizada por sessão (4 permutações) para evitar memorização posicional.
 - **CA-4:** Resposta HTTP 201 com:
   ```json
@@ -89,12 +89,12 @@ Cliente define modo, escopo e preferências; sistema sorteia as questões e abre
 - **CA-7:** Entrada em `audit_log` apenas para casos sensíveis (criação rotineira de quiz não auditadas — alto volume).
 
 **Erros previstos:**
-- **E-1:** Simulado TAP impossível (matérias sem questões) → HTTP 409 com `{ missing_subjects: [...] }`.
+- **E-1:** Simulado TAP impossível (eixos sem questões) → HTTP 409 com `{ missing_axes: [...] }`.
 - **E-2:** Matéria com menos de 5 questões publicadas → HTTP 409.
 - **E-3:** Eixo com menos de 5 questões publicadas → HTTP 409.
 - **E-4:** Acesso bloqueado por falta de assinatura ativa (QUIZ-RF-009) → HTTP 402.
 - **E-5:** Validação Zod falha → HTTP 422.
-- **E-6:** Soma dos `tap_weight` excede o teto de 60 → HTTP 409 com `{ reason: "tap_weight_overflow", total_weight }` (orienta o admin a revisar os pesos).
+- **E-6:** Soma dos `tap_weight` excede o teto de 60 → HTTP 409 com `{ reason: "tap_weight_overflow", total_weight }` (orienta o admin a revisar os pesos dos eixos).
 
 ---
 

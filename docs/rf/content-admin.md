@@ -17,9 +17,9 @@
 | Regra | Valor |
 |---|---|
 | Tamanho mín./máx. do nome de eixo | 3–80 caracteres |
+| Peso TAP do eixo | inteiro ≥ 0 (nº de questões esperadas na prova para aquele eixo, conforme edital vigente) |
 | Tamanho mín./máx. do nome da matéria | 3–120 caracteres |
 | Fonte oficial da matéria (texto livre) | até 240 caracteres |
-| Peso TAP da matéria | inteiro ≥ 0 (nº de questões esperadas na prova) |
 | Tamanho do enunciado da pergunta | 10–2.000 caracteres |
 | Número de alternativas | **fixo em 4** (ADR-0016) |
 | Tamanho de cada alternativa | 1–500 caracteres |
@@ -32,10 +32,10 @@
 ## Estrutura de dados (resumo do domínio)
 
 ### Eixo Temático
-- `id`, `name` (único, case-insensitive), `description?`, `status`, `created_at`, `archived_at?`.
+- `id`, `name` (único, case-insensitive), `description?`, `tap_weight` (inteiro, nº de questões do eixo na prova), `status`, `created_at`, `archived_at?`.
 
 ### Matéria
-- `id`, `axis_id` (FK), `name` (único dentro do eixo, case-insensitive), `official_source?` (texto livre), `tap_weight` (inteiro), `status`, `created_at`, `archived_at?`.
+- `id`, `axis_id` (FK), `name` (único dentro do eixo, case-insensitive), `official_source?` (texto livre), `status`, `created_at`, `archived_at?`.
 
 ### Pergunta
 - `id`, `subject_id` (FK matéria), `statement` (enunciado), `alternatives` (array de exatamente 4 strings), `correct_index` (0..3), `explanation` (justificativa, obrigatória), `source_reference?` (texto livre), `image_url?` (URL pública em R2), `status`, `author_id` (FK users), `created_at`, `updated_at`, `published_at?`, `archived_at?`, `stats_reset_at?`.
@@ -52,7 +52,7 @@
 Lista todos os eixos temáticos do sistema, com filtros.
 
 **Critérios de aceitação:**
-- **CA-1:** `GET /admin/axes` retorna `{ id, name, description, status, subjects_count, created_at }`, paginado (padrão 20).
+- **CA-1:** `GET /admin/axes` retorna `{ id, name, description, tap_weight, status, subjects_count, created_at }`, paginado (padrão 20).
 - **CA-2:** Filtros: `status` (`active`/`archived`/`all`, padrão `active`), `q` (busca por nome — prefixo, case-insensitive).
 - **CA-3:** `subjects_count` reflete apenas matérias `active`.
 
@@ -70,10 +70,11 @@ Lista todos os eixos temáticos do sistema, com filtros.
 Cria novo eixo no catálogo.
 
 **Critérios de aceitação:**
-- **CA-1:** `POST /admin/axes` com `{ name, description? }`. Validação contra regras gerais.
+- **CA-1:** `POST /admin/axes` com `{ name, description?, tap_weight }`. Validação contra regras gerais.
 - **CA-2:** `name` é único no sistema (case-insensitive). Conflito → E-1.
 - **CA-3:** Em sucesso, eixo nasce com `status=active`. HTTP 201 com payload do eixo.
 - **CA-4:** Entrada no `audit_log` com `action=create_axis`.
+- **CA-5:** `tap_weight=0` é válido (eixo cadastrado mas fora do TAP do ano vigente). Usado pelo "simulado TAP" no Módulo 5.
 
 **Erros previstos:**
 - **E-1:** Nome duplicado → HTTP 409.
@@ -91,7 +92,7 @@ Cria novo eixo no catálogo.
 Atualiza nome e/ou descrição de um eixo. Não altera status (operação dedicada em CONT-RF-004).
 
 **Critérios de aceitação:**
-- **CA-1:** `PATCH /admin/axes/:id` com `{ name?, description? }`. Edição parcial.
+- **CA-1:** `PATCH /admin/axes/:id` com `{ name?, description?, tap_weight? }`. Edição parcial.
 - **CA-2:** Se `name` mudou, valida unicidade (CA-2 de CONT-RF-002).
 - **CA-3:** Em sucesso, HTTP 200 com payload do eixo. Entrada em `audit_log`.
 
@@ -130,7 +131,7 @@ Soft-delete reversível: marca eixo como `archived` (ou volta para `active`). Ei
 Lista matérias do catálogo, com filtros.
 
 **Critérios de aceitação:**
-- **CA-1:** `GET /admin/subjects` retorna `{ id, axis_id, axis_name, name, official_source, tap_weight, status, questions_count, created_at }`, paginado.
+- **CA-1:** `GET /admin/subjects` retorna `{ id, axis_id, axis_name, name, official_source, status, questions_count, created_at }`, paginado.
 - **CA-2:** Filtros: `axis_id`, `status` (padrão `active`), `q` (nome).
 - **CA-3:** `questions_count` reflete apenas perguntas `published`.
 
@@ -143,14 +144,13 @@ Lista matérias do catálogo, com filtros.
 **Pré-condições:** Existe ao menos 1 eixo ativo.
 
 **Descrição:**
-Cria matéria vinculada a um eixo, com fonte oficial e peso esperado no TAP.
+Cria matéria vinculada a um eixo, com fonte oficial.
 
 **Critérios de aceitação:**
-- **CA-1:** `POST /admin/subjects` com `{ axis_id, name, official_source?, tap_weight }`. Validação contra regras gerais.
+- **CA-1:** `POST /admin/subjects` com `{ axis_id, name, official_source? }`. Validação contra regras gerais.
 - **CA-2:** `axis_id` deve apontar para eixo `active`. Eixo `archived` → E-1.
 - **CA-3:** `name` é único **dentro do eixo** (case-insensitive). Conflito → E-2.
-- **CA-4:** `tap_weight=0` é válido (matéria cobre o conteúdo mas não cai no TAP do ano vigente). Usado pelo "simulado TAP" no Módulo 5.
-- **CA-5:** Em sucesso, matéria nasce com `status=active`. HTTP 201. Entrada em `audit_log`.
+- **CA-4:** Em sucesso, matéria nasce com `status=active`. HTTP 201. Entrada em `audit_log`.
 
 **Erros previstos:**
 - **E-1:** Eixo inexistente ou arquivado → HTTP 422.
@@ -167,7 +167,7 @@ Cria matéria vinculada a um eixo, com fonte oficial e peso esperado no TAP.
 Atualiza qualquer campo da matéria, incluindo `axis_id` (move de eixo).
 
 **Critérios de aceitação:**
-- **CA-1:** `PATCH /admin/subjects/:id` com qualquer subconjunto de `{ axis_id?, name?, official_source?, tap_weight? }`.
+- **CA-1:** `PATCH /admin/subjects/:id` com qualquer subconjunto de `{ axis_id?, name?, official_source? }`.
 - **CA-2:** Mudança de `axis_id` exige novo eixo `active` e re-validação de unicidade do nome no eixo destino.
 - **CA-3:** Perguntas vinculadas **acompanham** automaticamente (são filhas da matéria, não do eixo).
 - **CA-4:** Entrada em `audit_log`.

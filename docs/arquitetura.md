@@ -157,8 +157,8 @@ HTTP Request
 - Tokens de **verificação de e-mail**, **recuperação de senha** e **confirmação de troca de e-mail** — geridos pelo Better-Auth onde possível (ver ADR-0018); armazenados como hash, uso único, com expiração própria (AUTH-RF-002/006, PROF-RF-004).
 
 **Conteúdo (Eixo → Matéria → Pergunta)**
-- `axes` — id, name (unique, case-insensitive), description?, status (`active`/`archived`), created_at, archived_at?.
-- `subjects` — id, axis_id (FK), name (unique no eixo), official_source?, tap_weight (int ≥ 0), status, created_at, archived_at?.
+- `axes` — id, name (unique, case-insensitive), description?, tap_weight (int ≥ 0 — nº de questões do eixo na prova real, conforme edital vigente), status (`active`/`archived`), created_at, archived_at?.
+- `subjects` — id, axis_id (FK), name (unique no eixo), official_source?, status, created_at, archived_at?.
 - `questions` — id, subject_id (FK), statement, alternatives (4 strings), correct_index (0..3), explanation, source_reference?, image_url?, status (`draft`/`pending_review`/`published`/`archived`), author_id (FK users), reviewed_by?, reviewed_at?, rejection_reason?, difficulty_level (`unrated`/`easy`/`medium`/`hard`), difficulty_recomputed_at?, stats_reset_at?, created_at, updated_at, published_at?, archived_at?.
 - `question_stats` — question_id (PK/FK), total_answers, correct_count, last_updated. _Base do `accuracy` e do job de dificuldade (CONT-RF-017)._
 

@@ -34,12 +34,12 @@ Formato:
 
 ## 0004 — Hierarquia de conteúdo: Eixo → Matéria → Pergunta (2026-05-28)
 
-**Contexto:** O TAP cobra matérias agrupadas por afinidade, cada matéria geralmente associada a uma fonte oficial (manual/norma/lei), com quantidade de questões por matéria definida pelo edital.
+**Contexto:** O TAP cobra matérias agrupadas por afinidade, cada matéria geralmente associada a uma fonte oficial (manual/norma/lei). O edital do TAP fecha a quantidade de questões da prova **por eixo temático** (ex.: item 7.2 do Edital TAP/2026: Legislação e Normas = 18, Prevenção/Combate a Incêndio = 10, Atendimento Pré-Hospitalar = 5, Salvamento = 9, Ensino/Defesa Civil/SCI = 8 — total 50), não por matéria individual dentro do eixo.
 **Decisão:** Modelar o domínio em três níveis hierárquicos, todos cadastráveis em runtime (não enumerados em código):
-1. **Eixo Temático** (ex: Salvamento)
-2. **Matéria** — pertence a um eixo, tem fonte oficial e peso/quantidade de questões no TAP (ex: Salvamento Terrestre → Manual Operacional de Salvamento Terrestre)
+1. **Eixo Temático** — tem peso/quantidade de questões no TAP (ex: Salvamento)
+2. **Matéria** — pertence a um eixo, tem fonte oficial, sem peso próprio (ex: Salvamento Terrestre → Manual Operacional de Salvamento Terrestre)
 3. **Pergunta** — pertence a uma matéria, com alternativas e resposta correta.
-**Consequências:** Permite acomodar mudanças anuais do edital sem deploy. O peso por matéria viabiliza um modo "simulado TAP" que respeita a distribuição real da prova. Adiciona complexidade ao schema e às telas de cadastro.
+**Consequências:** Permite acomodar mudanças anuais do edital sem deploy. O peso por eixo viabiliza um modo "simulado TAP" que respeita a distribuição real da prova (correção 2026-07-19: peso estava originalmente modelado por matéria — corrigido após revisão do Edital TAP/2026, que fecha a distribuição por eixo). Adiciona complexidade ao schema e às telas de cadastro.
 
 ## 0005 — Administradores via whitelist de e-mails (2026-05-28)
 

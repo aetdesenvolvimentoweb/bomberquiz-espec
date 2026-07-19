@@ -48,7 +48,7 @@ Eixo Temático
 
 - Eixos e matérias podem ser **ativados/desativados** sem exclusão, acompanhando o ciclo anual do edital do TAP.
 - Perguntas têm **nível de dificuldade calculado automaticamente** (job diário às 00:00) com base no histórico de acertos/erros.
-- Cada matéria carrega um peso (`tap_weight`) usado para compor o simulado TAP proporcional.
+- Cada eixo temático carrega um peso (`tap_weight`) — o número de questões que o edital vigente atribui àquele eixo — usado para compor o simulado TAP.
 
 > Referência: `docs/rf/content-admin.md` · `docs/rf/content-partner.md` · `docs/decisoes.md` (ADR-0003, ADR-0004, ADR-0016)
 
@@ -71,7 +71,7 @@ CRUD completo de eixos, matérias e perguntas; publicação direta sem fila; apr
 Submissão de perguntas (até 50 rascunhos simultâneos); edição de publicadas devolve à fila `pending_review`; exclusão restrita a rascunhos; notificação de revisão via badge no app e e-mail transacional; dashboard com estatísticas das próprias contribuições.
 
 ### M5 — Quiz
-Três modos: **simulado TAP** (proporcional ao `tap_weight`, até 60 questões), **livre por matéria** e **livre por eixo**. Cronômetro opcional (1–5 min/questão, padrão 3 min). Sessão online-only, sem pause/resume. Estatísticas de desempenho por matéria, histórico de quizzes e timeline de evolução temporal. Reset total preserva histórico de sessões concluídas.
+Três modos: **simulado TAP** (respeitando o `tap_weight` de cada eixo, até 60 questões), **livre por matéria** e **livre por eixo**. Cronômetro opcional (1–5 min/questão, padrão 3 min). Sessão online-only, sem pause/resume. Estatísticas de desempenho por matéria, histórico de quizzes e timeline de evolução temporal. Reset total preserva histórico de sessões concluídas.
 
 ### M6 — Assinaturas
 Checkout via Mercado Pago (PIX, saldo MP, cartão em até 3×); sem recorrência automática no MVP. Lembretes de expiração por e-mail (D-7, D-3, D-1, D-0). Cortesias de assinatura (parceria/demonstracao) administradas com limite de 10/mês. Cupons de desconto. Reembolso automático em até 7 dias (CDC art. 49). Painel financeiro admin com separação entre receitas de vendas e de cortesias.
@@ -156,8 +156,8 @@ O backend gera a spec OpenAPI via `@hono/zod-openapi`. O frontend consome essa s
 |--------|-----------|
 | `users` | Cadastro unificado com campo `role` (client/partner/admin) |
 | `sessions` | Sessões de autenticação (sessão única por usuário) |
-| `axes` | Eixos temáticos |
-| `subjects` | Matérias (pertencentes a um eixo, com `tap_weight`) |
+| `axes` | Eixos temáticos, com `tap_weight` (nº de questões do eixo na prova real) |
+| `subjects` | Matérias (pertencentes a um eixo) |
 | `questions` | Perguntas com alternativas, justificativa, dificuldade calculada e snapshot para uso em quiz |
 | `quiz_sessions` | Sessões de quiz com modo, status e snapshot das perguntas sorteadas |
 | `subscription_plans` | Configuração de planos (admin pode alterar preços/duração) |

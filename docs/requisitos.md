@@ -97,13 +97,13 @@ O conteúdo do TAP é organizado em três níveis hierárquicos. Esses três ní
 ### Nível 1 — Eixo Temático
 > Termo de trabalho. Alternativas consideradas: "Grupo Temático", "Área de Conhecimento", "Bloco". Decisão registrada em `docs/decisoes.md` (ADR-0003).
 
-Agrupamento de matérias afins. Exemplos:
+Agrupamento de matérias afins. Cada eixo tem um **peso/quantidade de questões cobradas no TAP** — o edital define a prova em blocos por eixo (ex.: Legislação e Normas = 18 questões, Salvamento = 9 questões), não por matéria individual. Esse peso é usado pelo sistema na hora de **montar um quiz que simule a distribuição real da prova**. A prova do TAP tem **50 questões no total**, então a soma dos pesos de todos os eixos deve totalizar ~50 (o simulado TAP em QUIZ-RF-001 reflete essa distribuição). Exemplos:
 - **Salvamento**
 - **Prevenção e Combate a Incêndio**
 - _(outros eixos a serem cadastrados conforme edital vigente)_
 
 ### Nível 2 — Matéria
-Cada matéria pertence a **um** eixo temático e geralmente corresponde a uma **fonte oficial** (manual operacional, norma técnica, lei, protocolo). Cada matéria tem um **peso/quantidade de questões cobradas no TAP** — isso é usado pelo sistema na hora de **montar um quiz que simule a distribuição real da prova**. A prova do TAP tem **50 questões no total**, então a soma dos pesos de todas as matérias deve totalizar ~50 (o simulado TAP em QUIZ-RF-001 reflete essa distribuição).
+Cada matéria pertence a **um** eixo temático e geralmente corresponde a uma **fonte oficial** (manual operacional, norma técnica, lei, protocolo). A matéria em si não carrega peso próprio no TAP — o peso é do eixo (nível 1); a matéria só organiza o conteúdo/fonte oficial dentro do eixo.
 
 Exemplos:
 
