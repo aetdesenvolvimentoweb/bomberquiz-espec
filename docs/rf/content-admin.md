@@ -25,7 +25,7 @@
 | Tamanho de cada alternativa | 1–500 caracteres |
 | Justificativa da resposta | **obrigatória**, 10–2.000 caracteres (ADR-0016) |
 | Referência à fonte na pergunta | texto livre opcional, até 240 caracteres |
-| Imagem da pergunta | opcional, máx. 1, ≤ 2 MB, `image/jpeg`/`png`/`webp`, armazenada em Cloudflare R2 (ADR-0012) |
+| Imagem da pergunta | opcional, máx. 1, ≤ 2 MB, `image/jpeg`/`png`/`webp`, armazenada no Cloudinary (ADR-0012, revisado 2026-07-19) |
 | Status possíveis de eixo/matéria | `active`, `archived` |
 | Status possíveis de pergunta | `draft`, `pending_review` (só parceiro), `published`, `archived` |
 
@@ -38,7 +38,7 @@
 - `id`, `axis_id` (FK), `name` (único dentro do eixo, case-insensitive), `official_source?` (texto livre), `status`, `created_at`, `archived_at?`.
 
 ### Pergunta
-- `id`, `subject_id` (FK matéria), `statement` (enunciado), `alternatives` (array de exatamente 4 strings), `correct_index` (0..3), `explanation` (justificativa, obrigatória), `source_reference?` (texto livre), `image_url?` (URL pública em R2), `status`, `author_id` (FK users), `created_at`, `updated_at`, `published_at?`, `archived_at?`, `stats_reset_at?`.
+- `id`, `subject_id` (FK matéria), `statement` (enunciado), `alternatives` (array de exatamente 4 strings), `correct_index` (0..3), `explanation` (justificativa, obrigatória), `source_reference?` (texto livre), `image_url?` (URL pública no Cloudinary), `status`, `author_id` (FK users), `created_at`, `updated_at`, `published_at?`, `archived_at?`, `stats_reset_at?`.
 
 ---
 
@@ -206,6 +206,7 @@ Lista perguntas do catálogo, com filtros amplos para gestão e revisão.
 - **CA-2:** Filtros: `subject_id`, `axis_id`, `status` (multi-select, padrão `published,pending_review`), `author_id`, `q` (busca em enunciado, prefixo case-insensitive), `has_image`.
 - **CA-3:** `statement_preview` traz os primeiros 160 caracteres do enunciado.
 - **CA-4:** `accuracy` = % de acertos sobre `total_answers` (zero se `total_answers=0`).
+- **CA-5:** `GET /admin/questions/:id` retorna o detalhe completo da pergunta (todos os campos de CONT-RF-011 CA-1, não só o resumo de CA-1 acima) — usado pela tela de edição do admin, que precisa do enunciado/alternativas/gabarito completos, não do preview truncado. Adicionado durante a implementação (2026-07-19): não estava no inventário original de `api.md`, mas é necessário para qualquer UI de edição funcionar.
 
 ---
 
@@ -264,7 +265,7 @@ Soft-delete reversível (`archive`) é o caminho padrão — pergunta `archived`
 
 **Critérios de aceitação:**
 - **CA-1:** `POST /admin/questions/:id/archive` alterna `status` entre `archived` e o status anterior; `archived_at` é preenchido/zerado. Entrada em `audit_log`.
-- **CA-2:** `DELETE /admin/questions/:id` executa hard-delete **somente se** `total_answers = 0`. Em sucesso, a pergunta é removida fisicamente do banco junto com a imagem em R2 (best-effort). Entrada em `audit_log` com `action=delete_question` registra o ID, autor e matéria antes da exclusão (para auditoria).
+- **CA-2:** `DELETE /admin/questions/:id` executa hard-delete **somente se** `total_answers = 0`. Em sucesso, a pergunta é removida fisicamente do banco junto com a imagem no Cloudinary (best-effort). Entrada em `audit_log` com `action=delete_question` registra o ID, autor e matéria antes da exclusão (para auditoria).
 - **CA-3:** Tentativa de hard-delete com `total_answers > 0` → E-1 com mensagem "Esta pergunta já foi respondida — arquive-a em vez de excluir, para preservar o histórico dos clientes."
 - **CA-4:** Hard-delete é irreversível; UI exige confirmação explícita ("Excluir definitivamente").
 
@@ -279,18 +280,18 @@ Soft-delete reversível (`archive`) é o caminho padrão — pergunta `archived`
 **Ator:** Administrador.
 
 **Descrição:**
-Faz upload da imagem opcional vinculada a uma pergunta (diagrama, equipamento, planta-baixa). Armazenada em Cloudflare R2 (ADR-0012).
+Faz upload da imagem opcional vinculada a uma pergunta (diagrama, equipamento, planta-baixa). Armazenada no Cloudinary (ADR-0012, revisado 2026-07-19 — antes R2).
 
 **Critérios de aceitação:**
 - **CA-1:** `POST /admin/questions/:id/image` (multipart) valida tipo (`image/jpeg`/`png`/`webp`) e tamanho (≤ 2 MB). Backend valida MIME real, não confiar no header.
-- **CA-2:** Upload via porta `QuestionImageStorage` (em `application/`), adapter R2 em `infra/`. URL devolvida grava em `questions.image_url`.
-- **CA-3:** Substituição: novo upload sobre imagem existente tenta deletar a antiga no R2 (best-effort).
-- **CA-4:** `DELETE /admin/questions/:id/image` zera `image_url` e tenta deletar do R2.
+- **CA-2:** Upload via porta `IQuestionImageStoragePort` (em `application/`), adapter Cloudinary em `infra/storage/cloudinary.adapter.ts`. URL devolvida grava em `questions.image_url`.
+- **CA-3:** Substituição: novo upload sobre imagem existente tenta deletar a antiga no Cloudinary (best-effort).
+- **CA-4:** `DELETE /admin/questions/:id/image` zera `image_url` e tenta deletar do Cloudinary.
 
 **Erros previstos:**
 - **E-1:** Tipo inválido → HTTP 422.
 - **E-2:** Tamanho excedido → HTTP 413.
-- **E-3:** Falha no R2 → HTTP 502.
+- **E-3:** Falha no Cloudinary → HTTP 502.
 
 ---
 

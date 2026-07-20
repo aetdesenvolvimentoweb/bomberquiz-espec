@@ -197,8 +197,9 @@ O **inventário consolidado de endpoints** (todos os módulos) e as convenções
 - **Pagamentos:** Mercado Pago (PIX + cartão, assinaturas recorrentes).
 - **WhatsApp:** WhatsApp Cloud API (Meta) ou Z-API — _provedor a confirmar_.
 - **E-mail transacional:** **Resend** (confirmado, ADR-0012). Canal de suporte do MVP também é e-mail (`SUPPORT_EMAIL`). Migração para SES localizada na porta `EmailSender` se o volume crescer.
-- **Armazenamento de imagens de questões:** Cloudflare R2 (sem cobrança de egress).
+- **Armazenamento de imagens de questões:** Cloudinary (revisado 2026-07-19 — antes Cloudflare R2, ver ADR-0012) — mesmo provedor usado para avatares.
 - **Armazenamento de avatares:** Cloudinary (free tier, transformações automáticas) — ver ADR-0013.
+- **Armazenamento de backups e PDFs temporários (Módulo 7):** Cloudflare R2 (sem cobrança de egress) — inalterado.
 
 ### Princípios
 - Clean Architecture / Hexagonal — domínio puro, infra plugável.

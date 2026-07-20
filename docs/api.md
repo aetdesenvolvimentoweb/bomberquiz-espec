@@ -96,11 +96,12 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 | PATCH | `/admin/subjects/:id` | admin | CONT-RF-007 | Edita matéria |
 | POST | `/admin/subjects/:id/archive` | admin | CONT-RF-008 | Arquiva/desarquiva matéria |
 | GET | `/admin/questions` | admin | CONT-RF-009 | Lista perguntas (filtros amplos) |
+| GET | `/admin/questions/:id` | admin | CONT-RF-009 | Detalhe completo (usado pela edição) |
 | POST | `/admin/questions` | admin | CONT-RF-010 | Cria pergunta (publica direto; `?as_draft=true`) |
 | PATCH | `/admin/questions/:id` | admin | CONT-RF-011 | Edita pergunta (`reset_stats?`) |
 | POST | `/admin/questions/:id/archive` | admin | CONT-RF-012 | Arquiva/desarquiva |
 | DELETE | `/admin/questions/:id` | admin | CONT-RF-012 | Hard-delete (só se `total_answers=0`) |
-| POST | `/admin/questions/:id/image` | admin | CONT-RF-013 | Upload de imagem (R2) — `multipart` |
+| POST | `/admin/questions/:id/image` | admin | CONT-RF-013 | Upload de imagem (Cloudinary) — `multipart` |
 | DELETE | `/admin/questions/:id/image` | admin | CONT-RF-013 | Remove imagem |
 | GET | `/admin/questions/pending` | admin | CONT-RF-014 | Fila de revisão (FIFO) |
 | POST | `/admin/questions/:id/approve` | admin | CONT-RF-015 | Aprova pergunta de parceiro |

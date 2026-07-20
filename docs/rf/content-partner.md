@@ -131,7 +131,7 @@ Hard-delete de rascunho ou pergunta rejeitada (que volta para `draft`). Como per
 
 **Critérios de aceitação:**
 - **CA-1:** `DELETE /me/questions/:id`.
-- **CA-2:** Em sucesso, pergunta é removida fisicamente; imagem em R2 é deletada (best-effort). Entrada em `audit_log` com `action=delete_own_draft` registrando ID, matéria e enunciado antes da exclusão (auditoria).
+- **CA-2:** Em sucesso, pergunta é removida fisicamente; imagem no Cloudinary é deletada (best-effort). Entrada em `audit_log` com `action=delete_own_draft` registrando ID, matéria e enunciado antes da exclusão (auditoria).
 - **CA-3:** UI exige confirmação explícita.
 - **CA-4:** Pergunta em qualquer outro status → E-2 (parceiro nunca exclui pergunta em `pending_review`, `published` ou `archived`).
 
@@ -160,7 +160,7 @@ Faz upload da imagem opcional da própria pergunta. Espelha CONT-RF-013, restrit
 **Erros previstos:**
 - **E-1:** Status incompatível com edição → HTTP 409.
 - **E-2:** Tipo/tamanho inválido → HTTP 422 / HTTP 413.
-- **E-3:** Falha no R2 → HTTP 502.
+- **E-3:** Falha no Cloudinary → HTTP 502.
 
 ---
 

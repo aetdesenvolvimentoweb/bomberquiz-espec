@@ -117,12 +117,14 @@ A direção de dependência é sempre de fora para dentro: `http → application
 - **Pagamentos:** Mercado Pago (PIX + cartão, assinaturas recorrentes, doc em PT-BR, sem custo fixo).
 - **WhatsApp:** **decisão adiada conscientemente** — no MVP, WhatsApp não é canal ativo (sem OTP, sem recuperação de senha, sem notificações). O número é apenas contato declarado armazenado para uso futuro. Quando virar canal ativo (divulgação/marketing pós-MVP), a escolha será entre Cloud API (Meta) — oficial, gratuito até 1k conversas/mês, exige CNPJ/KYC — e Z-API — não-oficial, paga, setup rápido sem KYC. Decisão depende do status jurídico do negócio na época.
 - **E-mail transacional:** **Resend** confirmado (free 3.000 e-mails/mês cobre o volume estimado do MVP de 300–500 usuários × ~10 e-mails/mês; DX excelente; React Email reaproveita stack do frontend). Migração para SES é localizada na porta `EmailSender` se volume crescer.
-- **Storage de imagens de questões:** Cloudflare R2 (sem cobrança de egress, free 10 GB) — conteúdo estático, sem necessidade de transformações.
+- **Storage de imagens de questões:** ~~Cloudflare R2~~ **Cloudinary** (revisado 2026-07-19, ver nota abaixo) — free tier generoso e já usado para avatares (ADR-0013), evitando manter dois provedores de storage de imagem para um volume baixo (poucos KB por pergunta, sem tráfego que justifique o egress-zero do R2).
 - **Storage de avatares:** ver ADR-0013.
 
 Todas acessadas via **portas** definidas em `application/` ou `domain/`, implementadas em `infra/`.
 
 **Consequências:** Free tiers cobrem todo o início. Trocas posteriores ficam limitadas a `infra/`. Risco: provedores podem mudar precificação — a abstração já está pronta para mitigar.
+
+**Nota (2026-07-19, Slice 3 do Módulo 3):** Ao implementar CONT-RF-013, revisamos a escolha de R2 para imagens de pergunta. R2 continua a decisão correta para os dois usos que exigem egress alto/dados brutos (dump de backup do banco, PDFs temporários do Módulo 7 — ADR-0020/0024, inalterados). Para imagens de pergunta especificamente, o volume é pequeno e Cloudinary já seria necessário de qualquer forma para avatares — unificar em um único provedor de imagem evita manter dois adapters de storage só por essa distinção original ("estático, sem transformação" vs. "com transformação"), que na prática não trouxe benefício real. `infra/storage/cloudinary.adapter.ts` agora cobre também upload/delete de imagem de pergunta (porta `IQuestionImageStoragePort`), via chamadas HTTP diretas à API do Cloudinary (sem SDK adicional).
 
 ## 0013 — Avatares no Cloudinary; URL apenas no banco (2026-05-28)
 
@@ -158,7 +160,7 @@ Portabilidade (art. 18, V) **não** é atendida via endpoint no MVP — fica com
 - **Exatamente 4 alternativas** (`alternatives[4]`), **1 única correta** (`correct_index ∈ {0,1,2,3}`).
 - **Justificativa obrigatória** (`explanation`), exibida **após** o usuário responder. Reforça aprendizado e força o autor a fundamentar.
 - **Referência à fonte** (texto livre, opcional) — campo `source_reference` tipo "NT-01 CBMGO, art. 5º, §2º". Sem modelagem hierárquica.
-- **1 imagem opcional** por pergunta (R2, ≤ 2 MB, jpg/png/webp). Cobre diagramas/equipamentos/plantas.
+- **1 imagem opcional** por pergunta (Cloudinary, ≤ 2 MB, jpg/png/webp — provedor revisado em 2026-07-19, ver nota na ADR-0012). Cobre diagramas/equipamentos/plantas.
 - **Workflow diferente para admin e parceiro:** admin publica direto (`status=published`); parceiro envia para fila (`pending_review`); admin aprova ou rejeita. Detalhes em CONT-RF-014..016 e no Módulo 4.
 - **Soft-delete** via `status=archived` — perguntas nunca são hard-deletadas (preserva estatísticas e respostas históricas).
 - **Reset de estatísticas opcional** ao editar — flag `reset_stats` no PATCH; respostas antigas continuam armazenadas mas deixam de contar (`stats_reset_at`). Quem edita decide. UI sugere `true` se gabarito mudou.

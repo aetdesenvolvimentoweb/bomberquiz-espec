@@ -43,7 +43,7 @@ Eixo Temático
               ├── 4 alternativas (1 correta)
               ├── Justificativa (obrigatória)
               ├── Fonte oficial (opcional, texto livre)
-              └── Imagem (opcional, Cloudflare R2)
+              └── Imagem (opcional, Cloudinary)
 ```
 
 - Eixos e matérias podem ser **ativados/desativados** sem exclusão, acompanhando o ciclo anual do edital do TAP.
@@ -65,7 +65,7 @@ Registro com verificação de e-mail, login/logout, redefinição de senha por e
 Atualização de dados pessoais, avatar (Cloudinary), troca de e-mail e senha com cooldown anti-takeover, consentimento LGPD versionado, desativação reversível e exclusão definitiva com anonimização (ADR-0015).
 
 ### M3 — Conteúdo (Admin)
-CRUD completo de eixos, matérias e perguntas; publicação direta sem fila; aprovação/rejeição de contribuições de parceiros (motivo obrigatório na rejeição); gerenciamento de imagens (R2); ajuste automático de dificuldade via job.
+CRUD completo de eixos, matérias e perguntas; publicação direta sem fila; aprovação/rejeição de contribuições de parceiros (motivo obrigatório na rejeição); gerenciamento de imagens (Cloudinary); ajuste automático de dificuldade via job.
 
 ### M4 — Conteúdo (Parceiro)
 Submissão de perguntas (até 50 rascunhos simultâneos); edição de publicadas devolve à fila `pending_review`; exclusão restrita a rascunhos; notificação de revisão via badge no app e e-mail transacional; dashboard com estatísticas das próprias contribuições.
@@ -93,7 +93,7 @@ O sistema é dividido em **dois repositórios independentes**, conectados por um
 |--------|---------|
 | **domain** | Entidades, value objects, regras de negócio puras |
 | **application** | Use cases (orquestram domain + portas) |
-| **infra** | Adapters: banco (Drizzle), e-mail (Resend), storage (R2), pagamentos (MP), scheduler |
+| **infra** | Adapters: banco (Drizzle), e-mail (Resend), storage (Cloudinary imagens, R2 backups), pagamentos (MP), scheduler |
 | **http** | Rotas Hono, middleware, validação Zod, geração do spec OpenAPI |
 
 **Tecnologias principais:**
@@ -138,8 +138,8 @@ O backend gera a spec OpenAPI via `@hono/zod-openapi`. O frontend consome essa s
 | **Neon** (Postgres serverless) | Banco de dados principal; PITR nativo para backup contínuo | Ativo |
 | **Fly.io** | Hospedagem e execução da API (containers Bun) | Ativo |
 | **Cloudflare Pages** | Hospedagem e CDN do frontend PWA | Ativo |
-| **Cloudflare R2** | Armazenamento de imagens de perguntas e dumps de backup | Ativo |
-| **Cloudinary** | CDN e transformações de avatares de usuários (ADR-0013) | Ativo |
+| **Cloudflare R2** | Dumps de backup do banco (PDFs temporários do Módulo 7) | Ativo |
+| **Cloudinary** | CDN e transformações de avatares (ADR-0013) e imagens de perguntas (ADR-0012, revisado 2026-07-19) | Ativo |
 | **Mercado Pago** | Gateway de pagamentos (PIX, cartão, saldo MP) + webhooks | Ativo |
 | **Resend** | E-mails transacionais (verificação, recuperação, alertas, recibos) | Ativo |
 | **WhatsApp Cloud API** | Notificações por WhatsApp | Adiado pós-MVP |
