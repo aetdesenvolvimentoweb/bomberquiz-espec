@@ -123,7 +123,7 @@ Usuário envia ou remove a própria imagem de avatar. Upload vai para **Cloudina
 
 **Critérios de aceitação:**
 - **CA-1:** Upload aceita apenas `image/jpeg`, `image/png`, `image/webp` (regras gerais); tamanho ≤ 2 MB. Backend valida MIME real (não confiar apenas no header).
-- **CA-2:** Upload é feito via porta `AvatarStorage` (ADR-0013), implementada por adapter Cloudinary. Em sucesso, `users.avatar_url` recebe a URL devolvida pelo Cloudinary.
+- **CA-2:** Upload é feito via porta `AvatarStorage` (ADR-0013), implementada por adapter Cloudinary, na pasta `bomberquiz/users` (mesma convenção de namespacing por projeto usada em `bomberquiz/questions`, ver ADR-0012). Em sucesso, `users.avatar_url` recebe a URL devolvida pelo Cloudinary.
 - **CA-3:** Remoção (`DELETE /me/avatar`) zera `avatar_url`. Frontend volta a renderizar placeholder gerado client-side a partir das iniciais.
 - **CA-4:** Substituição (novo upload sobre avatar existente) tenta deletar a imagem antiga no Cloudinary (best-effort; falha não bloqueia o sucesso da operação — apenas log).
 

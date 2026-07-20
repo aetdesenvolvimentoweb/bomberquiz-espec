@@ -126,6 +126,8 @@ Todas acessadas via **portas** definidas em `application/` ou `domain/`, impleme
 
 **Nota (2026-07-19, Slice 3 do Módulo 3):** Ao implementar CONT-RF-013, revisamos a escolha de R2 para imagens de pergunta. R2 continua a decisão correta para os dois usos que exigem egress alto/dados brutos (dump de backup do banco, PDFs temporários do Módulo 7 — ADR-0020/0024, inalterados). Para imagens de pergunta especificamente, o volume é pequeno e Cloudinary já seria necessário de qualquer forma para avatares — unificar em um único provedor de imagem evita manter dois adapters de storage só por essa distinção original ("estático, sem transformação" vs. "com transformação"), que na prática não trouxe benefício real. `infra/storage/cloudinary.adapter.ts` agora cobre também upload/delete de imagem de pergunta (porta `IQuestionImageStoragePort`), via chamadas HTTP diretas à API do Cloudinary (sem SDK adicional).
 
+**Nota (2026-07-20):** Convenção de pastas na Cloudinary, para diferenciar este projeto de outros que possam usar a mesma conta: `bomberquiz/questions` (imagens de pergunta, já em uso) e `bomberquiz/users` (avatares — pasta reservada para quando PROF-RF-005 for implementado, ver `rf/profile.md`).
+
 ## 0013 — Avatares no Cloudinary; URL apenas no banco (2026-05-28)
 
 **Contexto:** Avatares são imagens pequenas que precisam de transformações (crop quadrado, múltiplos tamanhos para diferentes telas, otimização WebP/AVIF automática). Diferente das imagens de questões (estáticas, sem transformação), avatares se beneficiam de um CDN de imagens com URL-based transforms.
