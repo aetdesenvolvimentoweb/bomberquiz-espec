@@ -133,8 +133,10 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 | GET | `/me/performance` | sessão | QUIZ-RF-007 | Painel de desempenho (leitura liberada) |
 | POST | `/me/performance/reset` | sessão | QUIZ-RF-008 | Zera estatísticas (reautenticação) |
 | GET | `/me/performance/timeline` | sessão | QUIZ-RF-010 | Evolução mensal (`months=1..24`) |
+| GET | `/axes` | sessão | QUIZ-RF-001 | Lista eixos ativos (enxuto: id/name/tap_weight) — popula o seletor de `free_axis` |
+| GET | `/subjects` | sessão | QUIZ-RF-001 | Lista matérias ativas (enxuto: id/name/axis_id), filtro `axis_id?` — popula o seletor de `free_subject` |
 
-> QUIZ-RF-004 (expiração/auto-abandono) e QUIZ-RF-009 (bloqueio `402`) são, respectivamente, **job** e **middleware** — não endpoints próprios.
+> QUIZ-RF-004 (expiração/auto-abandono) e QUIZ-RF-009 (bloqueio `402`) são, respectivamente, **job** e **middleware** — não endpoints próprios. `GET /axes`/`GET /subjects` não são `/admin/*` (que exigem `role=admin` e servem a UI de gestão de conteúdo, Módulo 3) — são catálogo de leitura para qualquer sessão, introduzidos junto do frontend de QUIZ-RF-001.
 
 ### Módulo 6 — Assinaturas e cortesias (`subscriptions.md`)
 

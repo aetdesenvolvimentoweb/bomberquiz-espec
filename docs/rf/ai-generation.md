@@ -10,7 +10,7 @@
 - O processamento é **assíncrono**: a criação do job retorna imediatamente com `HTTP 202`; o admin acompanha o progresso via polling ou notificação in-app (AIGEN-RF-002).
 - Questões geradas seguem **exatamente** a mesma estrutura definida em ADR-0016 (4 alternativas, 1 correta, justificativa obrigatória, referência opcional, imagem opcional). Nenhuma regra de conteúdo é relaxada por ser gerada por IA.
 - Quando aprovadas, as questões vão diretamente para `status=published` (privilégio de admin, mesmo princípio de CONT-RF-010) — sem fila de revisão adicional.
-- Todo job e toda aprovação/descarte registram entrada em `audit_log`.
+- Todo job e toda aprovação/descarte registram entrada em `audit_log` (schema em `arquitetura.md` § Audit log). Listagens paginadas conforme `api.md` § Paginação, ordenação e filtros.
 - Acesso de não-admin → HTTP 403.
 
 ## Regras gerais
@@ -205,7 +205,7 @@ Retorna o estado atual do job e, quando concluído, a lista de questões geradas
 Listagem paginada dos jobs criados pelo admin, com estado e contadores de revisão, para acompanhamento e auditoria.
 
 **Critérios de aceitação:**
-- **CA-1:** `GET /admin/ai-generation/jobs` retorna `{ id, status, subject_name, material_name, question_count_requested, question_count_generated, summary: {pending, approved, discarded}, created_at, completed_at }`, paginado (padrão 20).
+- **CA-1:** `GET /admin/ai-generation/jobs` retorna `{ id, status, subject_name, material_name, question_count_requested, question_count_generated, summary: {pending, approved, discarded}, created_at, completed_at }`, paginado.
 - **CA-2:** Filtros: `status` (multi-select), `subject_id`.
 - **CA-3:** Ordenação padrão: `created_at DESC`.
 - **CA-4:** Admin vê apenas os próprios jobs. Lista de outro admin → HTTP 403 (não há endpoint cross-admin nesta versão).

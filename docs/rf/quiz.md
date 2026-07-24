@@ -10,7 +10,7 @@
 - Quiz é **efêmero**: cliente que fecha o app no meio **perde** a sessão em andamento (sem pause/resume no MVP — ver pendências).
 - Sistema **nunca envia ao cliente** o `correct_index` nem `explanation` de uma questão antes da resposta. Esses campos são retornados na resposta da submissão (QUIZ-RF-002 CA-3).
 - Acesso aos endpoints deste módulo exige sessão ativa **e** assinatura vigente (paga ou doada) **ou** estar dentro do período gratuito. Bloqueio detalhado em QUIZ-RF-009; regras de assinatura no Módulo 6.
-- Mesma cultura de Zod, audit log, mensagens genéricas e single-session dos módulos anteriores.
+- Mesma cultura de Zod, audit log, mensagens genéricas e single-session dos módulos anteriores. Listagens paginadas conforme `api.md` § Paginação, ordenação e filtros.
 
 ## Regras gerais
 
@@ -218,7 +218,7 @@ Tela de resultado mostrada ao finalizar (manual, automático ou por expiração)
 Histórico de quizzes do próprio cliente.
 
 **Critérios de aceitação:**
-- **CA-1:** `GET /me/quizzes` retorna `{ id, mode, scope_name?, status, started_at, finished_at, total_questions, correct_count, accuracy }`, paginado (padrão 20, ordenação por `started_at DESC`).
+- **CA-1:** `GET /me/quizzes` retorna `{ id, mode, scope_name?, status, started_at, finished_at, total_questions, correct_count, accuracy }`, paginado (ordenação por `started_at DESC`).
 - **CA-2:** Filtros: `mode`, `status` (`finished`/`expired`/`abandoned`; `in_progress` excluído por padrão), intervalo de datas.
 - **CA-3:** Sem retenção automática — histórico persiste indefinidamente.
 

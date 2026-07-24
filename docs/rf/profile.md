@@ -252,7 +252,7 @@ Admin localiza usuários para realizar ações administrativas (promover a parce
 
 **Critérios de aceitação:**
 - **CA-1:** Endpoint `GET /admin/users` com filtros: `email` (match exato, case-insensitive), `name` (prefixo, case-insensitive), `role` (`client`/`partner`/`admin`), `status` (`active`/`inactive`/`deleted`).
-- **CA-2:** Resposta paginada (page size padrão 20, máximo 100). Campos retornados: `id`, `name`, `email`, `role`, `status`, `created_at`, `last_login_at`. **Sem** telefone, DOB, sexo (admin não precisa para ações de papel/assinatura).
+- **CA-2:** Resposta paginada (`api.md` § Paginação, ordenação e filtros). Campos retornados: `id`, `name`, `email`, `role`, `status`, `created_at`, `last_login_at`. **Sem** telefone, DOB, sexo (admin não precisa para ações de papel/assinatura).
 - **CA-3:** Acesso restrito ao papel `admin`. Middleware RBAC consolidado virá no Módulo 3.
 - **CA-4:** Contas `deleted` aparecem na busca apenas se o admin filtrar explicitamente por `status=deleted` (para fins de auditoria).
 
@@ -272,7 +272,7 @@ Admin promove um Cliente a Parceiro, concedendo acesso à tela de cadastro de pe
 
 **Critérios de aceitação:**
 - **CA-1:** Admin localiza usuário via PROF-RF-011 e dispara a promoção (`PATCH /admin/users/:id/role`).
-- **CA-2:** Em sucesso, `role` vira `partner`. Entrada no `audit_log`: `{ actor_id, target_id, action: "promote_partner", at }`.
+- **CA-2:** Em sucesso, `role` vira `partner`. Entrada em `audit_log` com `action=promote_partner`.
 - **CA-3:** Promoção **não** dispara cortesia de assinatura automaticamente — é ato separado do admin (Módulo 6).
 - **CA-4:** Tentar promover um usuário que já é `partner` ou `admin` → E-1.
 - **CA-5:** Tentar promover conta `inactive` ou `deleted` → E-2.
@@ -294,7 +294,7 @@ Admin reverte um Parceiro para Cliente (perda do direito de cadastrar perguntas)
 
 **Critérios de aceitação:**
 - **CA-1:** `PATCH /admin/users/:id/role` com `role=client`.
-- **CA-2:** Em sucesso, `role` vira `client`. Entrada no `audit_log`: `{ actor_id, target_id, action: "revoke_partner", at, reason? }`. Campo `reason` é opcional mas recomendado.
+- **CA-2:** Em sucesso, `role` vira `client`. Entrada em `audit_log` com `action=revoke_partner`, `reason?` em `payload_summary` (campo opcional mas recomendado).
 - **CA-3:** Questões cadastradas pelo ex-parceiro **permanecem** no sistema (mesmo princípio de preservação da exclusão LGPD).
 - **CA-4:** Assinatura doada já concedida ao parceiro **não é** automaticamente revogada — admin pode revogar/encerrar separadamente se quiser (Módulo 6).
 - **CA-5:** Tentar revogar quem **não é** parceiro → E-1. Admin **não pode** revogar a si mesmo nem outro admin por essa rota (revogação de admin é via whitelist, ADR-0005).

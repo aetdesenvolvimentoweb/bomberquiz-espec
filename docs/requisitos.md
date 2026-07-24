@@ -46,10 +46,10 @@ O sistema tem duas frentes:
 ### Parceiro
 - Tem todos os direitos de um Cliente (responde testes, acompanha desempenho).
 - **Adicionalmente** cadastra perguntas e respostas — acessa a tela de gerenciamento de perguntas.
-- **Exclusão:** pode excluir **apenas as perguntas que ele próprio cadastrou**. Não pode excluir perguntas de outros parceiros ou de administradores.
-- **Edição:** _a definir — provavelmente também restrita às próprias._
+- **Exclusão:** pode excluir **apenas as perguntas que ele próprio cadastrou**, e só enquanto `draft`. Em `pending_review`/`published`/`archived`, só admin atua. PART-RF-005.
+- **Edição:** livre em `draft`; edição de pergunta já `published` devolve para `pending_review` (sai do catálogo até nova aprovação). PART-RF-003.
 - Não é assinante pagante: recebe **assinatura doada** por administrador como contrapartida pelo trabalho de cadastro.
-- _Questão em aberto:_ parceiro pode cadastrar em qualquer matéria, ou é vinculado a matérias específicas (especialidade)? Ver "Questões em aberto".
+- Cadastra livremente em **qualquer matéria `active`** — sem vinculação por especialidade no MVP. PART-RF-002.
 
 ## Cadastro e dados do usuário
 
@@ -75,20 +75,9 @@ Todos os papéis (Administrador, Cliente, Parceiro) compartilham o mesmo cadastr
 
 ## Cortesia de assinatura
 
-Funcionalidade administrativa de primeira classe (não um workaround). Permite a um administrador conceder assinatura gratuita a um usuário existente. Termo escolhido: "cortesia" (conotação comercial neutra; substituiu "doação" para evitar conotação de caridade e implicações fiscais inadequadas).
+Funcionalidade administrativa de primeira classe (não um workaround): permite a um administrador conceder assinatura gratuita a um usuário existente. Termo escolhido: "cortesia" (conotação comercial neutra; substituiu "doação" para evitar conotação de caridade e implicações fiscais inadequadas — ADR-0006). Atende dois usos com o mesmo mecanismo, diferenciados por categoria: remunerar parceiros pelo trabalho de cadastro (`parceria`) e uso promocional/demonstração (`demonstracao`).
 
-**Campos de uma cortesia:**
-- Usuário beneficiário (busca por e-mail).
-- Período concedido (em dias).
-- Categoria: `parceria` (remunerar trabalho de cadastro de conteúdo) ou `demonstracao` (uso promocional/divulgação). Campo obrigatório para auditoria e relatórios.
-- Notas opcionais (até 500 caracteres).
-- Administrador que concedeu (registrado automaticamente).
-- Data da concessão (automática).
-
-**Regras:**
-- Cortesias são acumuláveis: se o usuário já tem assinatura ativa (paga ou cortesia), o período da nova cortesia **estende** a data de expiração atual.
-- Cortesias aparecem no painel financeiro **separadas** das receitas (não contam como receita; contam como custo de aquisição/parceria conforme a categoria).
-- Administrador **pode revogar** uma cortesia ainda não totalmente consumida (motivo obrigatório). Encerra a parte futura, preserva o consumido. Limite de 10 cortesias/mês civil por admin. Detalhes em SUB-RF-008/010.
+Acumula sobre assinatura ativa existente (estende a expiração em vez de sobrepor), aparece separada de receita no painel financeiro, e é revogável pelo admin (motivo obrigatório, limite de 10/mês civil). Campos, regras e critérios de aceitação completos em [`rf/subscriptions.md`](rf/subscriptions.md) — SUB-RF-008 (conceder) e SUB-RF-010 (revogar).
 
 ## Domínio: estrutura dos conteúdos do TAP
 
@@ -137,7 +126,7 @@ Decorrem da estrutura acima:
 
 ## Requisitos funcionais
 
-Organizados em **6 módulos**, cada um em arquivo próprio sob `docs/rf/`. Identificadores no formato `<MODULO>-RF-NNN` (ex.: `AUTH-RF-001`). Cada RF traz: prioridade (Essencial / Desejável / Futuro), ator, pré-condições, descrição, critérios de aceitação (CA-N) e erros previstos (E-N).
+Organizados em **7 módulos**, cada um em arquivo próprio sob `docs/rf/`. Identificadores no formato `<MODULO>-RF-NNN` (ex.: `AUTH-RF-001`). Cada RF traz: prioridade (Essencial / Desejável / Futuro), ator, pré-condições, descrição, critérios de aceitação (CA-N) e erros previstos (E-N).
 
 | # | Módulo | Arquivo | Status |
 |---|---|---|---|
@@ -262,5 +251,5 @@ O **inventário consolidado de endpoints** (todos os módulos) e as convenções
 - ✅ Equivalência "questões cadastradas ↔ tempo de assinatura" → **sem regra automática no MVP** — admin observa o trabalho e doa manualmente. SUB-P-02.
 
 ### Em aberto
-- Todos os módulos funcionais do MVP estão cobertos; pendências por módulo estão nos rodapés de `rf/*.md`.
+- Todos os módulos funcionais do MVP estão cobertos; pendências por módulo estão nos rodapés de `rf/*.md`. O Módulo 7 (IA) é o único com pendências genuinamente abertas hoje (AIGEN-P-01 a AIGEN-P-04 — canal de notificação, política de retry, visibilidade entre admins, escolha de modelo — ver rodapé de `rf/ai-generation.md`); os demais módulos têm suas pendências resolvidas (ver "Resolvidas" acima).
 - **Pendências não-funcionais/de negócio** (ver `docs/tarefas.md`): definição de CNPJ/regime tributário e NFS-e (ADR-0019); redação da Política de Privacidade + Termos (bloqueio de lançamento); spike do Better-Auth (ADR-0018).

@@ -12,7 +12,7 @@
 - **Edição de pergunta já publicada:** parceiro pode editar a própria pergunta `published`, mas a edição **devolve a pergunta para `pending_review`** e ela sai do catálogo ativo até nova aprovação. Decisão consciente para preservar revisão humana (ver pendência resolvida no rodapé).
 - **Exclusão pelo parceiro:** apenas perguntas próprias em `draft` (incluindo as rejeitadas que voltaram para `draft`). Em outros status, o parceiro **não exclui** — admin é quem arquiva (CONT-RF-012).
 - Todo acesso a endpoint deste módulo exige `role=partner` (admin também passa, herda as permissões). Acesso de cliente → HTTP 403.
-- Mesmas convenções de auditoria, Zod e mensagens genéricas dos módulos anteriores.
+- Mesmas convenções de auditoria, Zod e mensagens genéricas dos módulos anteriores. Listagens paginadas conforme `api.md` § Paginação, ordenação e filtros.
 
 ## Regras gerais
 
@@ -36,7 +36,7 @@
 Lista todas as perguntas cadastradas pelo parceiro, em todos os status.
 
 **Critérios de aceitação:**
-- **CA-1:** `GET /me/questions` retorna `{ id, subject_id, subject_name, axis_name, statement_preview, status, has_image, created_at, submitted_at, published_at, rejection_reason, total_answers, accuracy, difficulty_level }`, paginado (padrão 20).
+- **CA-1:** `GET /me/questions` retorna `{ id, subject_id, subject_name, axis_name, statement_preview, status, has_image, created_at, submitted_at, published_at, rejection_reason, total_answers, accuracy, difficulty_level }`, paginado.
 - **CA-2:** Filtros suportados: `status` (multi-select, padrão `draft,pending_review,published`), `subject_id`, `axis_id`, `q` (busca em enunciado).
 - **CA-3:** Ordenação padrão: `updated_at DESC`. Aceita `sort=published_at|created_at|accuracy`.
 - **CA-4:** `accuracy` e `total_answers` só são significativos para `published` ou perguntas que já tiveram passagem por `published`. Para `draft`/`pending_review` recém-criadas, exibe zero.

@@ -8,7 +8,8 @@
 - Este módulo cobre o **poder administrativo total** sobre o catálogo de conteúdo: eixos temáticos, matérias e perguntas. Operações restritas a `role=admin`.
 - O **Módulo 4** (`rf/content-partner.md`) reusa a mesma estrutura de dados de pergunta definida aqui, mas com permissões e workflow específicos do parceiro (fila de aprovação, escopo limitado).
 - Toda operação destrutiva (arquivar eixo/matéria/pergunta) é **soft-delete** via campo `status` ou `archived_at` — preserva FKs e estatísticas históricas (mesmo princípio de ADR-0015 para usuários).
-- Toda ação administrativa registra entrada em `audit_log`: `{ actor_id, action, target_type, target_id, at, payload_summary }`.
+- Toda ação administrativa registra entrada em `audit_log` (schema em `arquitetura.md` § Audit log) com o `action` indicado em cada CA.
+- Listagens são paginadas conforme `api.md` § Paginação, ordenação e filtros (`page`/`page_size`, default 20, máx. 100).
 - Entrada inválida → HTTP 422 com lista de campos; acesso de não-admin → HTTP 403.
 - A definição da estrutura mínima da pergunta (4 alternativas, gabarito único, justificativa obrigatória, imagem opcional) está em **ADR-0016**.
 
@@ -52,7 +53,7 @@
 Lista todos os eixos temáticos do sistema, com filtros.
 
 **Critérios de aceitação:**
-- **CA-1:** `GET /admin/axes` retorna `{ id, name, description, tap_weight, status, subjects_count, created_at }`, paginado (padrão 20).
+- **CA-1:** `GET /admin/axes` retorna `{ id, name, description, tap_weight, status, subjects_count, created_at }`, paginado.
 - **CA-2:** Filtros: `status` (`active`/`archived`/`all`, padrão `active`), `q` (busca por nome — prefixo, case-insensitive).
 - **CA-3:** `subjects_count` reflete apenas matérias `active`.
 
@@ -377,7 +378,4 @@ Job recorrente que recalcula o `difficulty_level` de toda pergunta `published` c
 
 ## Pendências deste módulo — resolvidas em 2026-05-28
 
-- ✅ **CONT-P-01 — Fórmula de nível de dificuldade.** Decidido: bandas `unrated` (< 30 respostas) / `easy` (≥ 70%) / `medium` (40–70%) / `hard` (< 40%). Recalculado por **job diário às 00:00** (fuso `America/Sao_Paulo`). Especificado em CONT-RF-017.
-- ✅ **CONT-P-02 — Versionamento de perguntas após atualização do manual.** Decidido: **sem mecanismo automático**. Admin edita ou arquiva manualmente. Adicionalmente, hard-delete da pergunta é permitido **somente** quando `total_answers=0` (CONT-RF-012 CA-2/CA-3) — para perguntas já respondidas, a saída continua sendo arquivar para preservar histórico.
-- ✅ **CONT-P-03 — Hierarquia entre administradores.** Decidido: **todos os admins iguais** (mantém ADR-0005 sem alteração). Reavaliar se equipe crescer além de 5 ou se surgir necessidade real de separação de poderes.
-- ✅ **CONT-P-04 — Reset parcial vs total das estatísticas.** Decidido: **reset total** (comportamento já especificado em CONT-RF-011 CA-4). Reset granular por usuário fica como ideia futura caso volume de edições com mudança de gabarito torne a UX ruim para clientes que responderam antes.
+Todas resolvidas (CONT-P-01 a CONT-P-04: fórmula de dificuldade, versionamento de perguntas, hierarquia entre admins, reset parcial vs. total de estatísticas) — respostas completas em [`../requisitos.md`](../requisitos.md) § Questões em aberto → Resolvidas.

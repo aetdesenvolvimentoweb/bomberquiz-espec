@@ -213,7 +213,7 @@ Estratégia em duas fases para evitar custo desnecessário no início e ter migr
 - CORS: backend permite `Origin: https://app.bomberquiz.com.br`
 - **E-mail:** transacional (Resend) verificado em `send.bomberquiz.com.br` (SPF/DKIM/MX próprios, sem conflitar com a raiz); caixa humana de suporte (`suporte@bomberquiz.com.br`, Hostinger Business) com MX na raiz do domínio. Detalhes e justificativa em ADR-0028.
 
-**Status (2026-07-09):** `bomberquiz.com.br` registrado (confirmação de registro em andamento) e `bomberquiz.com` registrado como redirect 301 permanente para o `.br` — ver ADR-0028. DNS de e-mail e migração das URLs de Fase 2 ficam pendentes da confirmação do `.br` (plano em `tarefas.md`).
+**Status (2026-07-10):** Fase 2 migrada e validada em produção — `bomberquiz.com.br` é o domínio oficial (`bomberquiz.com` é redirect 301 permanente), frontend em `app.bomberquiz.com.br`, backend em `api.bomberquiz.com.br`, e-mail transacional verificado em `send.bomberquiz.com.br`, suporte humano em `suporte@bomberquiz.com.br`. Detalhes da decisão em ADR-0028; histórico da execução em `tarefas.md` (entrada de 2026-07-10).
 
 **Implicações arquiteturais (válidas desde a Fase 1):**
 - URLs **em variáveis de ambiente**, nunca hardcoded. Variáveis chave:
@@ -223,8 +223,21 @@ Estratégia em duas fases para evitar custo desnecessário no início e ter migr
   - `MP_WEBHOOK_URL` — `${API_BASE_URL}/webhooks/mercado-pago` (informado ao MP no painel deles)
   - `SUPPORT_EMAIL` — endereço de suporte exibido em mensagens de erro e e-mails (default `suporte@bomberquiz.com.br`). Canal de suporte do MVP é **e-mail** (WhatsApp adiado, ADR-0012). É o destino indicado em fluxos como reembolso fora da janela de 7 dias (SUB-RF-014), falha de pagamento e portabilidade LGPD sob demanda (ADR-0015).
 - Links em e-mails transacionais (verificação, recuperação, expiração) usam `WEB_ORIGIN`.
-- Mercado Pago aceita atualizar URL do webhook quando migrar para Fase 2 — sem reescrita.
+- Mercado Pago aceita atualizar URL do webhook quando migrar para Fase 2 — sem reescrita. Pendente: URL ainda não configurada no painel do MP, já que a integração de pagamentos não existe (ver Backlog em `tarefas.md`).
 - Custo da Fase 2: registro `bomberquiz.com.br` no Registro.br (~R$40/ano).
+
+**Pegadinhas de execução no Cloudflare** (confirmadas na migração de 2026-07-10):
+- O registro DNS do domínio da API (`api.bomberquiz.com.br` → Fly.io) precisa
+  ficar **DNS-only** (proxy desligado, "nuvem cinza") na zona Cloudflare —
+  com o proxy ligado, o desafio ACME do `flyctl certs add` falha na emissão
+  do certificado. Proxy pode ser ativado depois, como melhoria opcional
+  (WAF), só após o certificado já emitido e trocando o SSL/TLS mode da zona
+  para **Full (strict)**.
+- Um redirect de host (ex.: `www.` → `app.`, ou `bomberquiz.com` →
+  `bomberquiz.com.br`) só funciona se existir **algum** registro DNS
+  proxied para esse host na zona — o Cloudflare só intercepta requisições
+  de hosts que existem na zona antes de aplicar uma Redirect Rule. Host sem
+  registro nenhum cai direto em erro de conexão, sem chance de redirecionar.
 
 ---
 

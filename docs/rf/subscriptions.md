@@ -12,7 +12,7 @@
 - **Reembolso integral** dentro de **7 dias** da compra atende ao direito de arrependimento (CDC art. 49) — automatizado via UI; fora da janela, suporte manual.
 - Acesso aos endpoints administrativos exige `role=admin`; aos endpoints de assinatura própria, sessão ativa do cliente; aos webhooks do Mercado Pago, validação de assinatura HMAC.
 - Período gratuito (trial) de **7 dias** ao verificar e-mail. Único por usuário (não renovável).
-- Toda transação financeira (sucesso ou falha) registra entrada em `audit_log`.
+- Toda transação financeira (sucesso ou falha) registra entrada em `audit_log` (schema em `arquitetura.md` § Audit log). Listagens paginadas conforme `api.md` § Paginação, ordenação e filtros.
 
 ## Regras gerais
 
