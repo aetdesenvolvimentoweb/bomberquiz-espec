@@ -2,6 +2,7 @@
 
 > Identificador dos RFs deste módulo: `AIGEN-RF-NNN`.
 > Ver [`../requisitos.md`](../requisitos.md) para visão geral; [`../decisoes.md`](../decisoes.md) para ADRs; [`../arquitetura.md`](../arquitetura.md) para implementação.
+> Ciclo de implementação (fatiamento, status por fatia, decisões técnicas): [`ai-generation-plano-implementacao.md`](ai-generation-plano-implementacao.md).
 
 ## Convenções deste módulo
 

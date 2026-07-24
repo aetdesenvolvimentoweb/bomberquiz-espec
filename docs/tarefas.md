@@ -233,7 +233,7 @@
 - [ ] **QUIZ-RF-009 (bloqueio de acesso por assinatura)** — deliberadamente não implementado na Slice 1 (ver decisão de escopo acima); implementar junto do Módulo 6, inserindo `requireActiveAccess` só em `POST /quizzes` e `POST /quizzes/:id/answers`.
 - [x] ~~Módulo 7, Fatia 0 (infra greenfield: schema, Anthropic, R2, PDF, `SKIP LOCKED`)~~ — concluída em 2026-07-24 (ver entrada acima).
 - [x] ~~Módulo 7, Fatia 1 (criar job — AIGEN-RF-001)~~ — concluída em 2026-07-24 (ver entrada acima).
-- [ ] **Módulo 7, Fatias 2-5** (AIGEN-RF-002/003 consultar/listar, AIGEN-RF-004 worker assíncrono, AIGEN-RF-005 a 008 revisão de questões, AIGEN-RF-009 excluir job) — plano completo em `C:\Users\SAT\.claude\plans\me-deparei-com-o-functional-marshmallow.md`. Fatia 2 (consultar/listar) é o próximo passo.
+- [ ] **Módulo 7, Fatias 2-5** (AIGEN-RF-002/003 consultar/listar, AIGEN-RF-004 worker assíncrono, AIGEN-RF-005 a 008 revisão de questões, AIGEN-RF-009 excluir job) — plano completo em [`rf/ai-generation-plano-implementacao.md`](rf/ai-generation-plano-implementacao.md). Fatia 2 (consultar/listar) é o próximo passo.
 - [x] ~~Preencher credenciais reais de `ANTHROPIC_API_KEY`/`R2_*` em `.env`~~ — feito em 2026-07-24, smoke test real confirmou os dois adapters (ver entrada da Fatia 0 acima).
 
 - [ ] Atualizar webhook do Mercado Pago para `https://api.bomberquiz.com.br/webhooks/mercado-pago` quando a integração for desenvolvida (ver Fase 2 do domínio acima).
