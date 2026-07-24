@@ -24,7 +24,7 @@
 | Jobs criados por admin por dia | máximo 10 |
 | Retenção dos PDFs no R2 | excluídos automaticamente ao job atingir `completed` ou `failed` (ADR-0024) |
 | Tempo máximo de processamento | 5 minutos por job; após isso → `failed` com `timeout` |
-| Modelo LLM padrão | `claude-sonnet-4-6` (ADR-0022) |
+| Modelo LLM padrão | `claude-sonnet-5` (ADR-0022, revisado 2026-07-24) |
 
 ## Fluxo geral
 
@@ -165,7 +165,7 @@ Retorna o estado atual do job e, quando concluído, a lista de questões geradas
     "question_count_requested": 20,
     "question_count_generated": 18,
     "queue_position": 0,
-    "model_used": "claude-sonnet-4-6",
+    "model_used": "claude-sonnet-5",
     "prompt_tokens": 42000,
     "completion_tokens": 3200,
     "error_message": null,
