@@ -2,7 +2,7 @@
 
 > Ver [`ai-generation.md`](ai-generation.md) para os RFs (**o quê**) e [`ai-generation-plano-implementacao.md`](ai-generation-plano-implementacao.md) para o backend, já 100% completo. Este documento é sobre **como** implementar a UI web (`bomberquiz-web`) que consome esse backend — o fatiamento, a ordem, e as decisões de design tomadas ao longo do ciclo. Progresso e achados de cada fatia ficam registrados em [`../tarefas.md`](../tarefas.md); este arquivo é o roteiro, não o changelog.
 
-**Status:** Plano criado em 2026-07-25. Fatias 1 e 2 concluídas (2026-07-25).
+**Status:** Plano criado em 2026-07-25. Fatias 1, 2 e 3 concluídas (2026-07-25).
 
 ## Contexto
 
@@ -63,7 +63,7 @@ Rotas em `src/app/router.tsx` (dentro do bloco `RequireAdmin`/`PanelLayout` já 
 |---|---|---|---|
 | 1 | Fundação | Regenerar schema, 3 rotas + nav, histórico vazio (só prova guard/navegação) | ✅ concluída 2026-07-25 |
 | 2 | Criar job | Formulário completo (matéria + contagem + 2 PDFs), upload multipart, navega pro detalhe | ✅ concluída 2026-07-25 |
-| 3 | Acompanhar job | Polling (pending/processing) + visão de falha (failed) | pendente |
+| 3 | Acompanhar job | Polling (pending/processing) + visão de falha (failed) | ✅ concluída 2026-07-25 |
 | 4 | Histórico completo | Filtros (status/matéria) + paginação + resumo por job na lista | pendente |
 | 5 | Revisar questões | Visão "completed": tabela + editar/aprovar/descartar individual | pendente |
 | 6 | Lote + excluir | Aprovar todas/descartar todas + exclusão de job (fluxo de confirmação em 2 passos) | pendente |
@@ -84,11 +84,12 @@ Rotas em `src/app/router.tsx` (dentro do bloco `RequireAdmin`/`PanelLayout` já 
 - `AiGenerationNewJobPage`: formulário completo (Select de matéria só ativas, input de quantidade, 2 `AiGenerationPdfPicker`), submit bloqueado com toast se algum PDF faltar, `navigate("/painel/geracao-ia/:jobId")` com o `job_id` retornado (202).
 - **Verificação**: `bun run typecheck` limpo. `bun run test`: 68 pass (+4 novos: bloqueio sem PDFs, criação com sucesso + payload multipart correto + navegação, erro do servidor via toast, rejeição de arquivo não-PDF antes do envio). **Smoke manual real** (com consentimento explícito do usuário sobre o custo): formulário preenchido e submetido de verdade via Playwright contra a API local rodando (worker incluso) — job criado, worker processou de verdade (`claude-sonnet-5`, 1436+427 tokens), 1 questão gerada a partir do material de estudo enviado, job apareceu como "Concluído" na lista. Job e questão removidos via `DELETE /admin/ai-generation/jobs/:id` ao final.
 
-### Fatia 3 — Acompanhar job (AIGEN-RF-002)
+### Fatia 3 — Acompanhar job (AIGEN-RF-002) ✅
 
-- `useAiGenerationJob(id)` com `refetchInterval` condicional.
-- `AiGenerationJobDetailPage`: visão de progresso (`pending`/`processing`, com `queue_position`/tempo estimado se disponíveis) e visão de falha (`failed`, `error_message` + ação excluir).
-- Verificação manual: observar um job real transicionar de `pending` → `processing` → `completed`/`failed` na tela sem reload manual.
+- `useAiGenerationJob(id)` em `ai-generation-api.ts`: `refetchInterval` condicional (3s enquanto `pending`/`processing`, para em `completed`/`failed`) — primeiro uso de polling no projeto.
+- `useDeleteAiGenerationJob()` (adiantado desta fatia, não da 6): a visão de falha já precisa de uma ação de excluir funcional. Implementado com o fluxo de 2 tentativas completo (retry com `confirm_discard_pending: true` no 409) — a Fatia 6 só vai reaproveitar este hook na lista, sem precisar refazer nada.
+- `AiGenerationJobDetailPage`: 3 sub-visões por status — `pending`/`processing` (spinner + posição na fila ou mensagem de progresso), `failed` (mensagem de erro real do backend + botão "Excluir job" com `AlertDialog` de confirmação, e um segundo `AlertDialog` só se houver pendentes), `completed` (resumo simples — a tabela de revisão fica pra Fatia 5). 404/erro de rede tratados com mensagem + link de volta ao histórico.
+- **Verificação**: `bun run typecheck` limpo. `bun run test`: 75 pass (+7 novos: fila, processando, falha+exclusão, 409 com confirmação extra, concluído, 404, polling real via fake timers confirmando 2ª chamada após 3s). **Smoke manual real** (com consentimento explícito do usuário): job criado de verdade via Playwright, observado transicionando `Pendente` → `Processando` → `Concluído` na tela via polling real (sem reload), confirmado por screenshots em cada tick. Visão de falha também testada com um PDF sem texto extraível (sem custo de Anthropic, falha na extração) — mensagem de erro real exibida, exclusão via UI confirmada ponta a ponta (dialog → `DELETE` real → toast → navegação de volta ao histórico).
 
 ### Fatia 4 — Histórico completo (AIGEN-RF-003)
 
@@ -104,8 +105,8 @@ Rotas em `src/app/router.tsx` (dentro do bloco `RequireAdmin`/`PanelLayout` já 
 ### Fatia 6 — Ações em lote + excluir job (AIGEN-RF-008/009)
 
 - Botões "Aprovar todas"/"Descartar todas" na visão de revisão, cada um com `AlertDialog`.
-- Exclusão de job (lista e detalhe): fluxo de confirmação em 2 passos com `confirm_discard_pending`.
-- Verificação manual: aprovar/descartar em lote, excluir um job com pendentes (confirmando o segundo diálogo) e um sem pendentes (direto).
+- Exclusão de job **na lista** (`AiGenerationJobsPage`): reaproveita `useDeleteAiGenerationJob()`, já implementado e testado na Fatia 3 (fluxo de 2 tentativas completo) — só falta o botão/ícone por linha e os 2 `AlertDialog`, sem lógica nova de rede.
+- Verificação manual: aprovar/descartar em lote, excluir um job com pendentes (confirmando o segundo diálogo) e um sem pendentes (direto) a partir da lista.
 
 ## Arquivos críticos
 
