@@ -2,7 +2,7 @@
 
 > Ver [`ai-generation.md`](ai-generation.md) para os RFs (**o quê**); este documento é sobre **como** implementar — o fatiamento, a ordem, e as decisões técnicas tomadas ao longo do ciclo. Progresso e achados de cada fatia ficam registrados em [`../tarefas.md`](../tarefas.md); este arquivo é o roteiro, não o changelog.
 
-**Status:** Fatias 0, 1, 2 e 3 concluídas (2026-07-24, 2026-07-24, 2026-07-25, 2026-07-25). Próximo passo: Fatia 4.
+**Status:** Fatias 0, 1, 2, 3 e 4 concluídas (2026-07-24, 2026-07-24, 2026-07-25, 2026-07-25, 2026-07-25). Backend do módulo funcionalmente completo (criar → consultar → processar → revisar); só falta a Fatia 5 (desejável, excluir job) e o plano de UI web (ainda não fatiado).
 
 ## Contexto
 
@@ -20,8 +20,8 @@ O módulo tem 4 componentes genuinamente novos no codebase (nenhum precedente pa
 | 1 | Criar job | AIGEN-RF-001 | ✅ concluída 2026-07-24 |
 | 2 | Consultar/listar jobs | AIGEN-RF-002/003 | ✅ concluída 2026-07-25 |
 | 3 | Worker assíncrono (núcleo de negócio) | AIGEN-RF-004 | ✅ concluída 2026-07-25 |
-| 4 | Revisão de questões (editar/aprovar/descartar) | AIGEN-RF-005 a 008 | próximo passo |
-| 5 (desejável) | Excluir job | AIGEN-RF-009 | pendente |
+| 4 | Revisão de questões (editar/aprovar/descartar) | AIGEN-RF-005 a 008 | ✅ concluída 2026-07-25 |
+| 5 (desejável) | Excluir job | AIGEN-RF-009 | próximo passo (opcional) |
 
 Os 4 componentes greenfield ficam isolados na Fatia 0, sem nenhuma rota HTTP — se alguma integração externa se mostrar instável, isso não trava as fatias de negócio. Mesmo raciocínio de risco já usado no Módulo 5 (scheduler isolado antes das fatias de fluxo).
 
@@ -71,10 +71,15 @@ Detalhes completos e achados: ver entrada de 2026-07-25 ("Fatia 2") em [`../tare
 
 Detalhes completos, achados (incl. um bug real de timestamp corrigido durante o smoke test) e resultado do smoke manual: ver entrada de 2026-07-25 ("Fatia 3") em [`../tarefas.md`](../tarefas.md).
 
-### Fatia 4 — Revisão de questões (AIGEN-RF-005 a 008)
+### Fatia 4 — Revisão de questões (AIGEN-RF-005 a 008) ✅
 
-- `update-ai-generated-question.usecase.ts`, `approve-ai-generated-question.usecase.ts` (reaproveita `IQuestionRepository` do Módulo 3 para criar o registro `published` em `questions`), `discard-ai-generated-question.usecase.ts`, `approve-all-.../discard-all-...usecase.ts`.
-- Teste e2e do fluxo completo: criar job → processar (mock) → editar → aprovar individual → descartar → lote.
+- `AiGeneratedQuestion` ganhou invariante de construtor (mesma checagem de `Question.entity.ts`) + métodos `markEdited`/`approve`/`discard`, exatamente como reservado desde a Fatia 2.
+- `update-ai-generated-question.usecase.ts` (RF-005, sem audit_log — CA-4), `approve-ai-generated-question.usecase.ts` (RF-006, reaproveita `IQuestionRepository` do Módulo 3 para criar o registro `published` em `questions`, mesmo padrão de `CreateQuestionUseCase`), `discard-ai-generated-question.usecase.ts` (RF-007). Checagens comuns extraídas para `load-ai-generated-question-for-review.ts`.
+- `approve-all-ai-generated-questions.usecase.ts`/`discard-all-ai-generated-questions.usecase.ts` (RF-008): reaproveitam os use cases individuais por composição — `txManager.run()` aninhado não abre uma segunda transação real, então o lote roda como uma transação só (CA-1) com isolamento de erro por item (CA-5).
+- Rotas `PATCH .../questions/{qid}`, `POST .../questions/{qid}/approve`, `POST .../questions/{qid}/discard`, `POST .../approve-all`, `POST .../discard-all`, todas `.openapi()`.
+- Teste e2e do fluxo completo: job `completed` semeado com questões `pending` → editar → aprovar individual (confirma `Question` `published` real) → descartar → lote.
+
+Detalhes completos, achados (incl. um bug real de merge de PATCH parcial corrigido antes do smoke) e resultado do smoke manual: ver entrada de 2026-07-25 ("Fatia 4") em [`../tarefas.md`](../tarefas.md).
 
 ### Fatia 5 (desejável) — Excluir job (AIGEN-RF-009)
 
@@ -91,6 +96,8 @@ Detalhes completos, achados (incl. um bug real de timestamp corrigido durante o 
 - `api/src/application/ai-generation/list-ai-generation-jobs.usecase.ts`
 - `api/src/application/ai-generation/process-ai-generation-job.usecase.ts`
 - `api/src/application/ai-generation/timeout-ai-generation-jobs.usecase.ts`
+- `api/src/application/ai-generation/approve-ai-generated-question.usecase.ts`
+- `api/src/application/ai-generation/approve-all-ai-generated-questions.usecase.ts`
 - `api/src/infra/persistence/drizzle/repositories/ai-generation-job.repository.ts`
 - `api/src/infra/persistence/drizzle/repositories/ai-generated-question.repository.ts`
 - `api/src/infra/persistence/drizzle/repositories/ai-reference-exam.repository.ts`
