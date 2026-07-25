@@ -2,7 +2,7 @@
 
 > Ver [`ai-generation.md`](ai-generation.md) para os RFs (**o quê**); este documento é sobre **como** implementar — o fatiamento, a ordem, e as decisões técnicas tomadas ao longo do ciclo. Progresso e achados de cada fatia ficam registrados em [`../tarefas.md`](../tarefas.md); este arquivo é o roteiro, não o changelog.
 
-**Status:** Fatias 0, 1 e 2 concluídas (2026-07-24, 2026-07-24, 2026-07-25). Próximo passo: Fatia 3.
+**Status:** Fatias 0, 1, 2 e 3 concluídas (2026-07-24, 2026-07-24, 2026-07-25, 2026-07-25). Próximo passo: Fatia 4.
 
 ## Contexto
 
@@ -19,8 +19,8 @@ O módulo tem 4 componentes genuinamente novos no codebase (nenhum precedente pa
 | 0 | Infra pura greenfield (sem rota HTTP) | base | ✅ concluída 2026-07-24 |
 | 1 | Criar job | AIGEN-RF-001 | ✅ concluída 2026-07-24 |
 | 2 | Consultar/listar jobs | AIGEN-RF-002/003 | ✅ concluída 2026-07-25 |
-| 3 | Worker assíncrono (núcleo de negócio) | AIGEN-RF-004 | próximo passo |
-| 4 | Revisão de questões (editar/aprovar/descartar) | AIGEN-RF-005 a 008 | pendente |
+| 3 | Worker assíncrono (núcleo de negócio) | AIGEN-RF-004 | ✅ concluída 2026-07-25 |
+| 4 | Revisão de questões (editar/aprovar/descartar) | AIGEN-RF-005 a 008 | próximo passo |
 | 5 (desejável) | Excluir job | AIGEN-RF-009 | pendente |
 
 Os 4 componentes greenfield ficam isolados na Fatia 0, sem nenhuma rota HTTP — se alguma integração externa se mostrar instável, isso não trava as fatias de negócio. Mesmo raciocínio de risco já usado no Módulo 5 (scheduler isolado antes das fatias de fluxo).
@@ -59,16 +59,17 @@ Detalhes completos e achados: ver entrada de 2026-07-24 ("Fatia 1") em [`../tare
 
 Detalhes completos e achados: ver entrada de 2026-07-25 ("Fatia 2") em [`../tarefas.md`](../tarefas.md).
 
-### Fatia 3 — Worker assíncrono (núcleo de negócio, AIGEN-RF-004)
+### Fatia 3 — Worker assíncrono (núcleo de negócio, AIGEN-RF-004) ✅
 
-- `ai-reference-exam.repository.ts` (cache por SHA-256, ADR-0025).
-- Funções puras de domínio: `identify-reference-questions.ts`, `parse-generated-questions.ts` (validação semântica pós tool-use — aqui entra a checagem de "exatamente 4 alternativas" que o schema estrito da Anthropic não consegue expressar, ver Fatia 0), `split-material-into-chunks.ts`.
-- `application/ai-generation/process-ai-generation-job.usecase.ts` — o "worker use case", mesmo papel de `ExpireAndAbandonQuizzesUseCase`: reivindica jobs via `claimNextPendingJob()` em transação **curta**, processa fora de transação (chamadas de rede de 30-90s nunca devem segurar lock de banco), extrai texto, resolve cache de exemplos, chama o LLM com prompt caching, persiste questões, finaliza job, remove PDFs do R2 em qualquer desfecho.
-- `application/ai-generation/timeout-ai-generation-jobs.usecase.ts` — job de manutenção (CA-10).
+- `ai-reference-exam.repository.port.ts` + `DrizzleAiReferenceExamRepository` (cache por SHA-256, ADR-0025) — sem entidade de domínio, mesma razão de `audit_log` (sem ciclo de vida).
+- Funções puras em `application/ai-generation/` (mesmo padrão de `calculate-queue-position.ts` da Fatia 2, não em `domain/`): `estimate-token-count.ts`, `identify-reference-questions.ts`, `split-material-into-chunks.ts` (empacotamento guloso por parágrafo), `distribute-question-count.ts`, `parse-generated-questions.ts` (validação semântica pós tool-use — a checagem de "exatamente 4 alternativas" que o schema estrito da Anthropic não consegue expressar, ver Fatia 0), `build-system-prompt.ts`.
+- `application/ai-generation/process-ai-generation-job.usecase.ts` — o "worker use case", mesmo papel de `ExpireAndAbandonQuizzesUseCase`: reivindica jobs via `claimNextPendingJob()` (agora parte da porta) em transação **curta**, processa fora de transação (chamadas de rede de 30-90s nunca devem segurar lock de banco), extrai texto, resolve cache de exemplos, chama o LLM com prompt caching, persiste questões, finaliza job, remove PDFs do R2 em qualquer desfecho.
+- `application/ai-generation/timeout-ai-generation-jobs.usecase.ts` — job de manutenção (CA-10), limiar de 5 min como constante fixa de domínio (não env var).
+- Ajuste cirúrgico em `anthropic.adapter.ts`: `questionCount` (recebido desde a Fatia 0 mas nunca usado) agora entra num bloco de texto separado, fora do `system` cacheado.
 - Registro de 2 novos jobs no scheduler existente (`index.ts`), reutilizando `infra/scheduler/scheduler.ts` tal como está — **sem infraestrutura de fila nova** (confirma ADR-0023).
-- **Nota de concorrência:** em deploy single-machine (premissa atual do projeto, `fly.toml` com 1 máquina), o `protect: true` do croner já evita sobreposição; o `SKIP LOCKED` garante que nenhum job é processado 2×. Se o app escalar horizontalmente no futuro, o controle de "máx. 2 simultâneos" via contagem vira best-effort — aceitável por ser controle de custo, não invariante de correção (documentar, não resolver agora).
+- **Nota de concorrência:** em deploy single-machine (premissa atual do projeto, `fly.toml` com 1 máquina), o `protect: true` do croner já evita sobreposição; o `SKIP LOCKED` garante que nenhum job é processado 2×. O tick reivindica até `AI_GENERATION_MAX_CONCURRENT_JOBS` jobs e processa todos concorrentemente via `Promise.allSettled` — o próximo tick só começa depois que o lote termina. Se o app escalar horizontalmente no futuro, o controle de "máx. 2 simultâneos" via contagem vira best-effort — aceitável por ser controle de custo, não invariante de correção.
 
-**Critério de pronto:** job criado na Fatia 1 é processado ponta-a-ponta (mockado) até `completed`, questões persistidas, PDFs removidos, timeout funcional; 1 smoke test manual contra a API real da Anthropic (custo controlado, poucas questões).
+Detalhes completos, achados (incl. um bug real de timestamp corrigido durante o smoke test) e resultado do smoke manual: ver entrada de 2026-07-25 ("Fatia 3") em [`../tarefas.md`](../tarefas.md).
 
 ### Fatia 4 — Revisão de questões (AIGEN-RF-005 a 008)
 
@@ -88,9 +89,11 @@ Detalhes completos e achados: ver entrada de 2026-07-25 ("Fatia 2") em [`../tare
 - `api/src/application/ai-generation/create-ai-generation-job.usecase.ts`
 - `api/src/application/ai-generation/get-ai-generation-job.usecase.ts`
 - `api/src/application/ai-generation/list-ai-generation-jobs.usecase.ts`
-- `api/src/application/ai-generation/process-ai-generation-job.usecase.ts` (Fatia 3)
+- `api/src/application/ai-generation/process-ai-generation-job.usecase.ts`
+- `api/src/application/ai-generation/timeout-ai-generation-jobs.usecase.ts`
 - `api/src/infra/persistence/drizzle/repositories/ai-generation-job.repository.ts`
 - `api/src/infra/persistence/drizzle/repositories/ai-generated-question.repository.ts`
+- `api/src/infra/persistence/drizzle/repositories/ai-reference-exam.repository.ts`
 - `api/src/config/env.ts`
 - `../decisoes.md` (ADR-0022 revisada)
 
