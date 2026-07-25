@@ -2,7 +2,7 @@
 
 > Ver [`ai-generation.md`](ai-generation.md) para os RFs (**o quê**); este documento é sobre **como** implementar — o fatiamento, a ordem, e as decisões técnicas tomadas ao longo do ciclo. Progresso e achados de cada fatia ficam registrados em [`../tarefas.md`](../tarefas.md); este arquivo é o roteiro, não o changelog.
 
-**Status:** Fatias 0, 1, 2, 3 e 4 concluídas (2026-07-24, 2026-07-24, 2026-07-25, 2026-07-25, 2026-07-25). Backend do módulo funcionalmente completo (criar → consultar → processar → revisar); só falta a Fatia 5 (desejável, excluir job) e o plano de UI web (ainda não fatiado).
+**Status:** Todas as 6 fatias concluídas (2026-07-24, 2026-07-24, 2026-07-25, 2026-07-25, 2026-07-25, 2026-07-25). **Backend do módulo 100% completo** (criar → consultar → processar → revisar → excluir); só falta o plano de UI web (ainda não fatiado).
 
 ## Contexto
 
@@ -21,7 +21,7 @@ O módulo tem 4 componentes genuinamente novos no codebase (nenhum precedente pa
 | 2 | Consultar/listar jobs | AIGEN-RF-002/003 | ✅ concluída 2026-07-25 |
 | 3 | Worker assíncrono (núcleo de negócio) | AIGEN-RF-004 | ✅ concluída 2026-07-25 |
 | 4 | Revisão de questões (editar/aprovar/descartar) | AIGEN-RF-005 a 008 | ✅ concluída 2026-07-25 |
-| 5 (desejável) | Excluir job | AIGEN-RF-009 | próximo passo (opcional) |
+| 5 (desejável) | Excluir job | AIGEN-RF-009 | ✅ concluída 2026-07-25 |
 
 Os 4 componentes greenfield ficam isolados na Fatia 0, sem nenhuma rota HTTP — se alguma integração externa se mostrar instável, isso não trava as fatias de negócio. Mesmo raciocínio de risco já usado no Módulo 5 (scheduler isolado antes das fatias de fluxo).
 
@@ -81,9 +81,13 @@ Detalhes completos, achados (incl. um bug real de timestamp corrigido durante o 
 
 Detalhes completos, achados (incl. um bug real de merge de PATCH parcial corrigido antes do smoke) e resultado do smoke manual: ver entrada de 2026-07-25 ("Fatia 4") em [`../tarefas.md`](../tarefas.md).
 
-### Fatia 5 (desejável) — Excluir job (AIGEN-RF-009)
+### Fatia 5 (desejável) — Excluir job (AIGEN-RF-009) ✅
 
-- `delete-ai-generation-job.usecase.ts` + rota `DELETE`. Prioridade "Desejável" no RF — pode ficar para depois sem bloquear nada.
+- Migration real (primeira desde a Fatia 0): `ai_generated_questions.job_id` vira nullable — necessário para CA-3 (a linha de uma questão `approved` sobrevive à exclusão do job, só perde o vínculo; a `Question` real em `questions` já estava protegida pela direção da FK, mas a própria linha de `ai_generated_questions`, com o rastro de revisão, não estaria sem isso).
+- `delete-ai-generation-job.usecase.ts`: dentro de um único `txManager.run()`, nulifica `job_id` das `approved` → hard-delete do restante (`pending`/`discarded`) → apaga o job — única ordem que não viola a FK. Limpeza best-effort do R2 (fora do texto literal do RF, mas necessária para jobs `pending` nunca processados) fora da transação.
+- Rota `DELETE /admin/ai-generation/jobs/:id`, `.openapi()`, corpo `{ confirm_discard_pending? }`, resposta `200` com resumo (`approved_preserved`/`removed_questions`).
+
+Detalhes completos, achados e resultado do smoke manual: ver entrada de 2026-07-25 ("Fatia 5") em [`../tarefas.md`](../tarefas.md).
 
 ## Arquivos críticos
 
@@ -98,6 +102,7 @@ Detalhes completos, achados (incl. um bug real de merge de PATCH parcial corrigi
 - `api/src/application/ai-generation/timeout-ai-generation-jobs.usecase.ts`
 - `api/src/application/ai-generation/approve-ai-generated-question.usecase.ts`
 - `api/src/application/ai-generation/approve-all-ai-generated-questions.usecase.ts`
+- `api/src/application/ai-generation/delete-ai-generation-job.usecase.ts`
 - `api/src/infra/persistence/drizzle/repositories/ai-generation-job.repository.ts`
 - `api/src/infra/persistence/drizzle/repositories/ai-generated-question.repository.ts`
 - `api/src/infra/persistence/drizzle/repositories/ai-reference-exam.repository.ts`
