@@ -2,7 +2,7 @@
 
 > Ver [`ai-generation.md`](ai-generation.md) para os RFs (**o quê**); este documento é sobre **como** implementar — o fatiamento, a ordem, e as decisões técnicas tomadas ao longo do ciclo. Progresso e achados de cada fatia ficam registrados em [`../tarefas.md`](../tarefas.md); este arquivo é o roteiro, não o changelog.
 
-**Status:** Fatia 0 e Fatia 1 concluídas (2026-07-24). Próximo passo: Fatia 2.
+**Status:** Fatias 0, 1 e 2 concluídas (2026-07-24, 2026-07-24, 2026-07-25). Próximo passo: Fatia 3.
 
 ## Contexto
 
@@ -18,8 +18,8 @@ O módulo tem 4 componentes genuinamente novos no codebase (nenhum precedente pa
 |---|---|---|---|
 | 0 | Infra pura greenfield (sem rota HTTP) | base | ✅ concluída 2026-07-24 |
 | 1 | Criar job | AIGEN-RF-001 | ✅ concluída 2026-07-24 |
-| 2 | Consultar/listar jobs | AIGEN-RF-002/003 | próximo passo |
-| 3 | Worker assíncrono (núcleo de negócio) | AIGEN-RF-004 | pendente |
+| 2 | Consultar/listar jobs | AIGEN-RF-002/003 | ✅ concluída 2026-07-25 |
+| 3 | Worker assíncrono (núcleo de negócio) | AIGEN-RF-004 | próximo passo |
 | 4 | Revisão de questões (editar/aprovar/descartar) | AIGEN-RF-005 a 008 | pendente |
 | 5 (desejável) | Excluir job | AIGEN-RF-009 | pendente |
 
@@ -48,12 +48,16 @@ Detalhes completos e achados: ver entrada de 2026-07-24 ("Fatia 0") em [`../tare
 
 Detalhes completos e achados: ver entrada de 2026-07-24 ("Fatia 1") em [`../tarefas.md`](../tarefas.md).
 
-### Fatia 2 — Consultar status + histórico (AIGEN-RF-002/003)
+### Fatia 2 — Consultar status + histórico (AIGEN-RF-002/003) ✅
 
-- `domain/ai-generation/ai-generated-question.entity.ts` + porta + repositório Drizzle.
+- `domain/ai-generation/ai-generated-question.entity.ts` (entidade completa, sem invariante de construtor nesta fatia) + `ai-generated-question.repository.port.ts` + `DrizzleAiGeneratedQuestionRepository`.
+- `ai-generation-job.repository.port.ts`: `countPendingCreatedBefore(createdAt)` + `list(filters)` paginado (join `subjects`).
+- `application/ai-generation/calculate-queue-position.ts` — helper puro extraído da fórmula da Fatia 1, reaproveitado por `create-ai-generation-job.usecase.ts` (refatorado) e pelo `get-ai-generation-job.usecase.ts` novo.
 - `application/ai-generation/get-ai-generation-job.usecase.ts` e `list-ai-generation-jobs.usecase.ts`.
 - Rotas `GET /admin/ai-generation/jobs/:id` e `GET /admin/ai-generation/jobs` via `.openapi()`.
-- Testes: como o worker ainda não existe, jobs `completed` com questões são semeados **direto via repositório** (mesmo artifício já usado no Módulo 3 para simular submissões de parceiro antes do Módulo 4 existir).
+- Testes: como o worker ainda não existe, jobs `completed`/`failed` com questões são semeados **direto via repositório** (mesmo artifício já usado no Módulo 3 para simular submissões de parceiro antes do Módulo 4 existir).
+
+Detalhes completos e achados: ver entrada de 2026-07-25 ("Fatia 2") em [`../tarefas.md`](../tarefas.md).
 
 ### Fatia 3 — Worker assíncrono (núcleo de negócio, AIGEN-RF-004)
 
@@ -82,8 +86,11 @@ Detalhes completos e achados: ver entrada de 2026-07-24 ("Fatia 1") em [`../tare
 - `api/src/infra/storage/r2.adapter.ts`
 - `api/src/infra/pdf/pdf-text-extractor.ts`
 - `api/src/application/ai-generation/create-ai-generation-job.usecase.ts`
+- `api/src/application/ai-generation/get-ai-generation-job.usecase.ts`
+- `api/src/application/ai-generation/list-ai-generation-jobs.usecase.ts`
 - `api/src/application/ai-generation/process-ai-generation-job.usecase.ts` (Fatia 3)
 - `api/src/infra/persistence/drizzle/repositories/ai-generation-job.repository.ts`
+- `api/src/infra/persistence/drizzle/repositories/ai-generated-question.repository.ts`
 - `api/src/config/env.ts`
 - `../decisoes.md` (ADR-0022 revisada)
 
