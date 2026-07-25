@@ -2,7 +2,7 @@
 
 > Ver [`ai-generation.md`](ai-generation.md) para os RFs (**o quê**) e [`ai-generation-plano-implementacao.md`](ai-generation-plano-implementacao.md) para o backend, já 100% completo. Este documento é sobre **como** implementar a UI web (`bomberquiz-web`) que consome esse backend — o fatiamento, a ordem, e as decisões de design tomadas ao longo do ciclo. Progresso e achados de cada fatia ficam registrados em [`../tarefas.md`](../tarefas.md); este arquivo é o roteiro, não o changelog.
 
-**Status:** Plano criado em 2026-07-25. Fatia 1 concluída (2026-07-25).
+**Status:** Plano criado em 2026-07-25. Fatias 1 e 2 concluídas (2026-07-25).
 
 ## Contexto
 
@@ -62,7 +62,7 @@ Rotas em `src/app/router.tsx` (dentro do bloco `RequireAdmin`/`PanelLayout` já 
 | # | Fatia | Entrega | Status |
 |---|---|---|---|
 | 1 | Fundação | Regenerar schema, 3 rotas + nav, histórico vazio (só prova guard/navegação) | ✅ concluída 2026-07-25 |
-| 2 | Criar job | Formulário completo (matéria + contagem + 2 PDFs), upload multipart, navega pro detalhe | pendente |
+| 2 | Criar job | Formulário completo (matéria + contagem + 2 PDFs), upload multipart, navega pro detalhe | ✅ concluída 2026-07-25 |
 | 3 | Acompanhar job | Polling (pending/processing) + visão de falha (failed) | pendente |
 | 4 | Histórico completo | Filtros (status/matéria) + paginação + resumo por job na lista | pendente |
 | 5 | Revisar questões | Visão "completed": tabela + editar/aprovar/descartar individual | pendente |
@@ -76,12 +76,13 @@ Rotas em `src/app/router.tsx` (dentro do bloco `RequireAdmin`/`PanelLayout` já 
 - **Desvio do plano original**: em vez de um teste de guard dedicado às 3 rotas novas (redundante — `RequireAdmin` é agnóstico de rota e já tem cobertura própria em `require-admin-guard.test.tsx`), foi escrito um teste de página para `AiGenerationJobsPage` (lista populada, estado vazio, link "Nova geração"), seguindo o padrão de `axes-page.test.tsx`; `panel-layout.test.tsx` foi atualizado para cobrir o 5º link de navegação.
 - **Verificação**: `bun run typecheck` limpo. `bun run test`: 64 pass (+3 novos, +1 assert no teste de nav), zero regressão. Verificação visual via `run-bomberquiz-web` (Playwright): as 3 rotas renderizam corretamente (nav item ativo, lista vazia + botão, placeholders de `/novo` e `/:jobId`).
 
-### Fatia 2 — Criar job (AIGEN-RF-001)
+### Fatia 2 — Criar job (AIGEN-RF-001) ✅
 
-- `ai-generation-pdf-picker.tsx` + `createJobFormSchema` (matéria obrigatória, `question_count` 1-30).
-- `useCreateAiGenerationJob()` (fetch cru multipart, mesmo padrão de `imageRequest`).
-- `AiGenerationNewJobPage`: formulário completo, submit → `navigate("/painel/geracao-ia/:jobId")` com o `job_id` retornado (202).
-- Verificação manual via `run-bomberquiz-web`: criar job real (2 PDFs válidos), confirmar navegação e que o job aparece com status `pending`.
+- `ai-generation-pdf-picker.tsx`: componente único (`AiGenerationPdfPicker`), reaproveitado 2x na página (prova de referência / material de estudo) em vez de um componente combinado de "2 slots" — mais simples e ainda extensão direta de `image-upload-field.tsx` (mesma checagem client-side de tipo `application/pdf` + ≤20MB, "UX only").
+- `features/ai-generation/schemas.ts`: `createJobFormSchema` (matéria obrigatória, `question_count` inteiro 1-30). Os 2 PDFs ficam fora do schema Zod — geridos como `File | null` em `useState`, mesmo padrão de `ImageUploadField`.
+- `useCreateAiGenerationJob()` em `ai-generation-api.ts`: `fetch` cru multipart (mesmo padrão de `imageRequest` em `questions-api.ts`), já que `POST /admin/ai-generation/jobs` fica fora do `.openapi()` do backend.
+- `AiGenerationNewJobPage`: formulário completo (Select de matéria só ativas, input de quantidade, 2 `AiGenerationPdfPicker`), submit bloqueado com toast se algum PDF faltar, `navigate("/painel/geracao-ia/:jobId")` com o `job_id` retornado (202).
+- **Verificação**: `bun run typecheck` limpo. `bun run test`: 68 pass (+4 novos: bloqueio sem PDFs, criação com sucesso + payload multipart correto + navegação, erro do servidor via toast, rejeição de arquivo não-PDF antes do envio). **Smoke manual real** (com consentimento explícito do usuário sobre o custo): formulário preenchido e submetido de verdade via Playwright contra a API local rodando (worker incluso) — job criado, worker processou de verdade (`claude-sonnet-5`, 1436+427 tokens), 1 questão gerada a partir do material de estudo enviado, job apareceu como "Concluído" na lista. Job e questão removidos via `DELETE /admin/ai-generation/jobs/:id` ao final.
 
 ### Fatia 3 — Acompanhar job (AIGEN-RF-002)
 

@@ -277,6 +277,14 @@
   - **Verificação**: `bun run typecheck` limpo. `bun run test`: 64 pass (+3 novos), zero regressão. Verificação visual real via skill `run-bomberquiz-web` (Playwright headless, admin de teste `delivered@resend.dev` criado no Postgres de dev): as 3 rotas renderizam corretamente — nav com o novo item ativo, lista vazia + botão "Nova geração", e os 2 placeholders navegáveis.
   - **Próximo passo**: Fatia 2 (`AIGEN-RF-001` — criar job: formulário com matéria, quantidade e upload dos 2 PDFs).
 
+- [x] 2026-07-25 — **UI web do Módulo 7, Fatia 2 — Criar job (AIGEN-RF-001)**, segunda das 6 fatias planejadas.
+  - `ai-generation-pdf-picker.tsx` (novo componente `AiGenerationPdfPicker`, extensão de `image-upload-field.tsx` para PDF — mesma checagem client-side de tipo/tamanho, "UX only"), reaproveitado 2x na página (prova de referência e material de estudo) em vez de um componente combinado — mais simples.
+  - `features/ai-generation/schemas.ts` (novo): `createJobFormSchema` (matéria obrigatória, `question_count` inteiro 1-30). Os 2 PDFs ficam fora do Zod, geridos como `File | null` em `useState`.
+  - `useCreateAiGenerationJob()` em `ai-generation-api.ts`: `fetch` cru multipart (mesmo padrão de `imageRequest` em `questions-api.ts` do Módulo 3), já que `POST /admin/ai-generation/jobs` fica fora do `.openapi()` do backend.
+  - `AiGenerationNewJobPage` completa: Select de matéria (só ativas), input de quantidade, os 2 `AiGenerationPdfPicker`, bloqueio com toast se algum PDF faltar no submit, `navigate` pro detalhe com o `job_id` retornado (202).
+  - **Verificação**: `bun run typecheck` limpo. `bun run test`: 68 pass (+4 novos), zero regressão. **Smoke manual real, com consentimento explícito do usuário sobre o custo** (mesmo protocolo da Fatia 3 do backend): formulário preenchido e submetido de verdade via Playwright contra a API local (worker incluso, rodando em background) — job criado, processado de verdade pela Anthropic (`claude-sonnet-5`, 1436+427 tokens), 1 questão gerada a partir do material enviado, job refletido como "Concluído" na lista real. Dados de teste (job + questão) removidos via `DELETE /admin/ai-generation/jobs/:id` ao final.
+  - **Próximo passo**: Fatia 3 (`AIGEN-RF-002` — acompanhar job: polling enquanto `pending`/`processing`, visão de erro em `failed`).
+
 ## Backlog (sem prioridade definida)
 
 - [ ] **Módulo 3 (Conteúdo Admin) — concluído nesta rodada** (Eixos, Matérias, Perguntas+imagem, Fila de revisão — ver "Realizadas"). Pendências residuais específicas: badge `unread_review_events` do parceiro e link direto no e-mail de aprovação/rejeição (ambos dependem do Módulo 4 existir — ver entrada de 2026-07-20 acima).
