@@ -293,6 +293,13 @@
   - **Nota**: durante o smoke, um job real com um PDF de conteúdo genuíno (`NO-21-Emprego de Aeronave Remotamente Pilotada.pdf`) apareceu no Postgres de dev, criado fora deste teste (provavelmente uso manual da API local rodando em paralelo) — não foi tocado, só os jobs sintéticos criados para este smoke foram removidos.
   - **Próximo passo**: Fatia 4 (`AIGEN-RF-003` — histórico completo: filtros de status/matéria + paginação real).
 
+- [x] 2026-07-26 — **UI web do Módulo 7, Fatia 4 — Histórico completo (AIGEN-RF-003)**, quarta das 6 fatias planejadas.
+  - `AiGenerationJobsFilters` ganhou `status`/`subjectId` opcionais; `useAiGenerationJobs` agora envia `status`/`subject_id` na query (o schema tipado já tinha os 2 campos desde a regeneração da Fatia 1).
+  - `AiGenerationJobsPage`: filtro de status e de matéria (`<select>` nativo, sentinel `"all"`, mesmo padrão de `questions-page.tsx`), paginação real com o componente `Pagination` compartilhado, nova coluna "Revisão" com 3 badges de resumo (aprovadas/pendentes/descartadas) quando `job.summary` existe, `—` quando `null`, e `error_message` de jobs `failed` exibido abaixo do material (AIGEN-RF-003 CA-5).
+  - **Achado**: `summary` do backend não é exclusivo de jobs `completed` — é calculado para qualquer job em `FINISHED_STATUSES` (`completed` e `failed`), então um `failed` sem questões geradas mostra corretamente "0/0/0", não `—`. Comportamento correto do contrato, confirmado durante a verificação visual.
+  - **Verificação**: `bun run typecheck` limpo. `bun run test`: 81 pass (+9 novos), zero regressão. Verificação visual via `run-bomberquiz-web` **sem custo de Anthropic** (só leitura): como o único job real do banco de dev pertence a outro admin (histórico corretamente escopado por `created_by`, CA-4), 2 jobs sintéticos foram inseridos direto no Postgres de dev (1 `completed`, 1 `failed` com `error_message`) só para exercitar os filtros e os badges contra a UI real — confirmados funcionando (status=failed e filtro de matéria cada um reduzindo a lista corretamente) — e removidos por ID exato ao final; o job pré-existente de outro admin não foi tocado.
+  - **Próximo passo**: Fatia 5 (`AIGEN-RF-005 a 007` — revisar questões geradas: tabela + editar/aprovar/descartar individual na visão `completed`).
+
 ## Backlog (sem prioridade definida)
 
 - [ ] **Módulo 3 (Conteúdo Admin) — concluído nesta rodada** (Eixos, Matérias, Perguntas+imagem, Fila de revisão — ver "Realizadas"). Pendências residuais específicas: badge `unread_review_events` do parceiro e link direto no e-mail de aprovação/rejeição (ambos dependem do Módulo 4 existir — ver entrada de 2026-07-20 acima).
@@ -306,7 +313,7 @@
 - [x] ~~Módulo 7, Fatia 3 (worker assíncrono — AIGEN-RF-004)~~ — concluída em 2026-07-25 (ver entrada acima).
 - [x] ~~Módulo 7, Fatia 4 (revisão de questões — AIGEN-RF-005 a 008)~~ — concluída em 2026-07-25 (ver entrada acima).
 - [x] ~~Módulo 7, Fatia 5 (desejável) — excluir job (AIGEN-RF-009)~~ — concluída em 2026-07-25 (ver entrada acima). **Backend do Módulo 7 100% completo.**
-- [ ] **UI web (`bomberquiz-web`) do Módulo 7** — plano criado em [`rf/ai-generation-ui-plano-implementacao.md`](rf/ai-generation-ui-plano-implementacao.md), fatiado em 6 partes (fundação → criar job → acompanhar job → histórico → revisar questões → lote/excluir). Nenhuma fatia implementada ainda.
+- [ ] **UI web (`bomberquiz-web`) do Módulo 7** — plano em [`rf/ai-generation-ui-plano-implementacao.md`](rf/ai-generation-ui-plano-implementacao.md), fatiado em 6 partes. Fatias 1-4 concluídas (fundação, criar job, acompanhar job, histórico completo — ver entradas acima); faltam Fatia 5 (revisar questões geradas) e Fatia 6 (ações em lote + excluir job na lista).
 - [x] ~~Preencher credenciais reais de `ANTHROPIC_API_KEY`/`R2_*` em `.env`~~ — feito em 2026-07-24, smoke test real confirmou os dois adapters (ver entrada da Fatia 0 acima).
 
 - [ ] Atualizar webhook do Mercado Pago para `https://api.bomberquiz.com.br/webhooks/mercado-pago` quando a integração for desenvolvida (ver Fase 2 do domínio acima).

@@ -2,7 +2,7 @@
 
 > Ver [`ai-generation.md`](ai-generation.md) para os RFs (**o quê**) e [`ai-generation-plano-implementacao.md`](ai-generation-plano-implementacao.md) para o backend, já 100% completo. Este documento é sobre **como** implementar a UI web (`bomberquiz-web`) que consome esse backend — o fatiamento, a ordem, e as decisões de design tomadas ao longo do ciclo. Progresso e achados de cada fatia ficam registrados em [`../tarefas.md`](../tarefas.md); este arquivo é o roteiro, não o changelog.
 
-**Status:** Plano criado em 2026-07-25. Fatias 1, 2 e 3 concluídas (2026-07-25).
+**Status:** Plano criado em 2026-07-25. Fatias 1, 2, 3 e 4 concluídas (2026-07-25, 2026-07-26).
 
 ## Contexto
 
@@ -64,7 +64,7 @@ Rotas em `src/app/router.tsx` (dentro do bloco `RequireAdmin`/`PanelLayout` já 
 | 1 | Fundação | Regenerar schema, 3 rotas + nav, histórico vazio (só prova guard/navegação) | ✅ concluída 2026-07-25 |
 | 2 | Criar job | Formulário completo (matéria + contagem + 2 PDFs), upload multipart, navega pro detalhe | ✅ concluída 2026-07-25 |
 | 3 | Acompanhar job | Polling (pending/processing) + visão de falha (failed) | ✅ concluída 2026-07-25 |
-| 4 | Histórico completo | Filtros (status/matéria) + paginação + resumo por job na lista | pendente |
+| 4 | Histórico completo | Filtros (status/matéria) + paginação + resumo por job na lista | ✅ concluída 2026-07-26 |
 | 5 | Revisar questões | Visão "completed": tabela + editar/aprovar/descartar individual | pendente |
 | 6 | Lote + excluir | Aprovar todas/descartar todas + exclusão de job (fluxo de confirmação em 2 passos) | pendente |
 
@@ -91,10 +91,12 @@ Rotas em `src/app/router.tsx` (dentro do bloco `RequireAdmin`/`PanelLayout` já 
 - `AiGenerationJobDetailPage`: 3 sub-visões por status — `pending`/`processing` (spinner + posição na fila ou mensagem de progresso), `failed` (mensagem de erro real do backend + botão "Excluir job" com `AlertDialog` de confirmação, e um segundo `AlertDialog` só se houver pendentes), `completed` (resumo simples — a tabela de revisão fica pra Fatia 5). 404/erro de rede tratados com mensagem + link de volta ao histórico.
 - **Verificação**: `bun run typecheck` limpo. `bun run test`: 75 pass (+7 novos: fila, processando, falha+exclusão, 409 com confirmação extra, concluído, 404, polling real via fake timers confirmando 2ª chamada após 3s). **Smoke manual real** (com consentimento explícito do usuário): job criado de verdade via Playwright, observado transicionando `Pendente` → `Processando` → `Concluído` na tela via polling real (sem reload), confirmado por screenshots em cada tick. Visão de falha também testada com um PDF sem texto extraível (sem custo de Anthropic, falha na extração) — mensagem de erro real exibida, exclusão via UI confirmada ponta a ponta (dialog → `DELETE` real → toast → navegação de volta ao histórico).
 
-### Fatia 4 — Histórico completo (AIGEN-RF-003)
+### Fatia 4 — Histórico completo (AIGEN-RF-003) ✅
 
-- Filtros de `status`/matéria + paginação em `AiGenerationJobsPage`, resumo (`pending`/`approved`/`discarded`) por linha.
-- Link de cada linha pro detalhe.
+- `AiGenerationJobsFilters` (`ai-generation-api.ts`) ganhou `status`/`subjectId` opcionais; `useAiGenerationJobs` agora passa `status`/`subject_id` na query (schema já tinha os 2 campos desde a regeneração da Fatia 1).
+- `AiGenerationJobsPage`: filtro de status e de matéria (`<select>` nativo, sentinel `"all"`, mesmo padrão de `questions-page.tsx`; matéria via `useSubjects({status:"all", page:1, pageSize:100})`), estado de página com o componente `Pagination` compartilhado (Anterior/Próxima + "Página X de Y"), nova coluna "Revisão" com 3 badges (`{approved} aprovadas`/`{pending} pendentes`/`{discarded} descartadas`) quando `job.summary` existe, `—` quando `null` (job ainda `pending`/`processing`). `error_message` de jobs `failed` (AIGEN-RF-003 CA-5) exibido como texto pequeno mutado abaixo do nome do material.
+- **Achado durante a verificação visual**: `summary` do backend não é `null` só para jobs `completed` — é calculado (podendo ser `{0,0,0}`) para qualquer job em `FINISHED_STATUSES` (`completed` **e** `failed`), já que a lógica olha para `ai_generated_questions` existentes, não para o status em si. Um job `failed` sem nenhuma questão gerada mostra corretamente "0 aprovadas/0 pendentes/0 descartadas" (não `—`) — comportamento correto do contrato, não um bug.
+- **Verificação**: `bun run typecheck` limpo. `bun run test`: 81 pass (+9 na página de lista: listagem, estado vazio, botão "Nova geração", badges de resumo, `—` quando sem resumo, `error_message` em failed, filtro de status, filtro de matéria, paginação), zero regressão. **Verificação visual via `run-bomberquiz-web`** — sem custo de Anthropic, é só leitura: como o único job do banco de dev pertence a outro admin (histórico é escopado por `created_by`, AIGEN-RF-003 CA-4 — corretamente mostrou vazio para o admin de teste), foram inseridos 2 jobs sintéticos direto no Postgres de dev (1 `completed` com 2 aprovadas/1 pendente, 1 `failed` com `error_message`) só para exercitar a tela; confirmados visualmente os 2 filtros funcionando contra a API real (status=failed e matéria específica cada um reduzindo a 1 linha corretamente) e os badges de resumo corretos. Os 2 jobs sintéticos e suas questões foram removidos do banco ao final (por ID exato); o job pré-existente de outro admin não foi tocado.
 
 ### Fatia 5 — Revisar questões geradas (AIGEN-RF-005 a 007)
 
