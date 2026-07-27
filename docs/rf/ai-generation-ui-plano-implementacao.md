@@ -2,7 +2,7 @@
 
 > Ver [`ai-generation.md`](ai-generation.md) para os RFs (**o quê**) e [`ai-generation-plano-implementacao.md`](ai-generation-plano-implementacao.md) para o backend, já 100% completo. Este documento é sobre **como** implementar a UI web (`bomberquiz-web`) que consome esse backend — o fatiamento, a ordem, e as decisões de design tomadas ao longo do ciclo. Progresso e achados de cada fatia ficam registrados em [`../tarefas.md`](../tarefas.md); este arquivo é o roteiro, não o changelog.
 
-**Status:** Plano criado em 2026-07-25. Fatias 1, 2, 3, 4 e 5 concluídas (2026-07-25, 2026-07-26, 2026-07-27).
+**Status:** Plano criado em 2026-07-25. **Concluído em 2026-07-27** — Fatias 1 a 6 todas concluídas (2026-07-25, 2026-07-26, 2026-07-27). Módulo 7 (Geração de Questões por IA) fica 100% completo, backend + frontend.
 
 ## Contexto
 
@@ -66,7 +66,7 @@ Rotas em `src/app/router.tsx` (dentro do bloco `RequireAdmin`/`PanelLayout` já 
 | 3 | Acompanhar job | Polling (pending/processing) + visão de falha (failed) | ✅ concluída 2026-07-25 |
 | 4 | Histórico completo | Filtros (status/matéria) + paginação + resumo por job na lista | ✅ concluída 2026-07-26 |
 | 5 | Revisar questões | Visão "completed": tabela + editar/aprovar/descartar individual | ✅ concluída 2026-07-27 |
-| 6 | Lote + excluir | Aprovar todas/descartar todas + exclusão de job (fluxo de confirmação em 2 passos) | pendente |
+| 6 | Lote + excluir | Aprovar todas/descartar todas + exclusão de job (fluxo de confirmação em 2 passos) | ✅ concluída 2026-07-27 |
 
 ### Fatia 1 — Fundação ✅
 
@@ -108,11 +108,13 @@ Rotas em `src/app/router.tsx` (dentro do bloco `RequireAdmin`/`PanelLayout` já 
 - **Achado durante a verificação visual**: `question_data` é armazenado no Postgres em **camelCase** (`correctIndex`, `sourceReference`), não snake_case como a resposta HTTP — o repositório (`ai-generated-question.repository.ts`) mapeia `row.questionData.correctIndex` direto do JSONB. Inserir dados sintéticos com chaves snake_case (espelhando a resposta da API) causa 500 silencioso (`correct_index` vira `undefined`, falha na validação do schema de resposta). Documentado aqui para não repetir o erro em verificações futuras.
 - **Verificação**: `bun run typecheck` limpo. `bun run test`: 85 pass (+4 na página de detalhe: tabela de revisão com ações condicionadas a `pending`, aprovar, editar, descartar), zero regressão. **Smoke manual real** via `run-bomberquiz-web`: inserido 1 job sintético `completed` (sem custo de Anthropic) com 3 questões `pending` para o admin de teste; via Playwright, editado o enunciado de uma questão (confirmado o PATCH real + tag "(editado)"), aprovada essa mesma questão (badge "Aprovada", toast "Questão aprovada e publicada.", e confirmado que ela aparece em `/painel/perguntas` com status "Publicada"), e descartada outra questão com motivo (badge "Descartada"). Job sintético, suas 3 questões geradas e a `Question` real criada pela aprovação foram todos removidos ao final por ID exato; o job pré-existente de outro admin não foi tocado.
 
-### Fatia 6 — Ações em lote + excluir job (AIGEN-RF-008/009)
+### Fatia 6 — Ações em lote + excluir job (AIGEN-RF-008/009) ✅
 
-- Botões "Aprovar todas"/"Descartar todas" na visão de revisão, cada um com `AlertDialog`.
-- Exclusão de job **na lista** (`AiGenerationJobsPage`): reaproveita `useDeleteAiGenerationJob()`, já implementado e testado na Fatia 3 (fluxo de 2 tentativas completo) — só falta o botão/ícone por linha e os 2 `AlertDialog`, sem lógica nova de rede.
-- Verificação manual: aprovar/descartar em lote, excluir um job com pendentes (confirmando o segundo diálogo) e um sem pendentes (direto) a partir da lista.
+- `ai-generation-api.ts` ganhou `useApproveAllGeneratedQuestions`/`useDiscardAllGeneratedQuestions` (POST `.../approve-all` sem body, POST `.../discard-all` com `reason?` opcional) — mesmo padrão de invalidação de `[...AI_GENERATION_JOB_QUERY_KEY, jobId]` dos hooks individuais.
+- Botões "Aprovar todas"/"Descartar todas" na visão de revisão (`AiGenerationJobDetailPage`, sub-visão `completed`), acima da tabela, visíveis só quando há alguma questão `pending`; cada um com `AlertDialog` de confirmação e toast com a contagem processada.
+- Exclusão de job **na lista** (`AiGenerationJobsPage`): reaproveitou `useDeleteAiGenerationJob()`, já implementado e testado na Fatia 3 (fluxo de 2 tentativas completo) — nova coluna "Ações" com botão "Excluir" por linha e os 2 `AlertDialog`, sem lógica nova de rede.
+- **Bug real encontrado e corrigido na verificação visual**: o 1º `AlertDialog` da lista usava o mesmo state (`deletingJobId`) tanto para saber qual job excluir quanto para controlar sua própria visibilidade, e seu `onOpenChange` zerava esse state sempre que o diálogo fechava — inclusive quando o fechamento era só efeito colateral da abertura do 2º diálogo (pendências), não uma ação do usuário. Resultado: confirmar "Excluir mesmo assim" no 2º diálogo sempre disparava o `DELETE` com `id` indefinido (path `{id}` não interpolado), e a API respondia 404. Corrigido separando a visibilidade do 1º diálogo em um state próprio (`confirmDeleteOpen`), deixando `deletingJobId` estável até sucesso/erro final — mesmo padrão já usado em `AiGenerationJobDetailPage` (lá `jobId` vem de `useParams`, por isso nunca teve esse problema). O teste unitário original não pegava o bug por checar só o `body` da chamada ao `DELETE`, não `params.path.id`; reforçado para checar ambos.
+- **Verificação**: `bun run typecheck` limpo. `bun run test`: 90 pass (+5 novos), zero regressão. Verificação visual via `run-bomberquiz-web` (2 rodadas, sem custo de Anthropic — jobs sintéticos `completed` com questões `pending` inseridos direto no Postgres de dev): aprovar/descartar em lote confirmados contra a API real; exclusão sem pendentes confirmada (1 diálogo); exclusão com pendentes reproduziu o bug acima na 1ª rodada (404 real) e, após a correção, foi re-verificada ponta a ponta na 2ª rodada — `DELETE` com o ID correto, 200, job e questão realmente removidos do Postgres. Dados sintéticos removidos por ID exato ao final de cada rodada.
 
 ## Arquivos críticos
 
