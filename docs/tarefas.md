@@ -300,6 +300,14 @@
   - **Verificação**: `bun run typecheck` limpo. `bun run test`: 81 pass (+9 novos), zero regressão. Verificação visual via `run-bomberquiz-web` **sem custo de Anthropic** (só leitura): como o único job real do banco de dev pertence a outro admin (histórico corretamente escopado por `created_by`, CA-4), 2 jobs sintéticos foram inseridos direto no Postgres de dev (1 `completed`, 1 `failed` com `error_message`) só para exercitar os filtros e os badges contra a UI real — confirmados funcionando (status=failed e filtro de matéria cada um reduzindo a lista corretamente) — e removidos por ID exato ao final; o job pré-existente de outro admin não foi tocado.
   - **Próximo passo**: Fatia 5 (`AIGEN-RF-005 a 007` — revisar questões geradas: tabela + editar/aprovar/descartar individual na visão `completed`).
 
+- [x] 2026-07-27 — **UI web do Módulo 7, Fatia 5 — Revisar questões geradas (AIGEN-RF-005 a 007)**, quinta das 6 fatias planejadas.
+  - `features/ai-generation/schemas.ts` ganhou `editGeneratedQuestionFormSchema` e `discardGeneratedQuestionFormSchema` (motivo opcional, até 500 caracteres); `ai-generation-api.ts` ganhou `useUpdateGeneratedQuestion`/`useApproveGeneratedQuestion`/`useDiscardGeneratedQuestion`, todos invalidando o detalhe do job.
+  - `ai-generation-question-edit-dialog.tsx` (fork simplificado de `question-form-dialog.tsx`, sem matéria/imagem/`resetStats`) e `ai-generation-discard-dialog.tsx` (fork de `reject-question-dialog.tsx`, motivo opcional em vez de obrigatório) — novos componentes.
+  - `AiGenerationJobDetailPage`: sub-visão `completed` ganhou a tabela de revisão real (reaproveita `job.questions`, já vindo do próprio `GET /jobs/:id`) — badge de `review_status`, tag "(editado)", e Editar/Aprovar/Descartar só quando `pending`. Aprovar é direto, sem diálogo (mesmo fluxo do parceiro).
+  - **Achado**: `question_data` é armazenado no Postgres em **camelCase** (`correctIndex`, `sourceReference`), não snake_case como a resposta HTTP — dados sintéticos inseridos com chaves snake_case causaram 500 silencioso na verificação (schema de resposta falhando ao validar `correct_index: undefined`). Corrigido inserindo com as chaves certas; documentado no plano de UI para não repetir.
+  - **Verificação**: `bun run typecheck` limpo. `bun run test`: 85 pass (+4 novos), zero regressão. Smoke manual real via `run-bomberquiz-web` (sem custo de Anthropic — job sintético `completed` com 3 questões `pending` inserido direto no Postgres): editada uma questão (PATCH real confirmado), aprovada (confirmada publicada em `/painel/perguntas`), descartada outra. Job sintético, suas questões e a `Question` real criada pela aprovação removidos ao final por ID exato.
+  - **Próximo passo**: Fatia 6 (`AIGEN-RF-008/009` — aprovar/descartar todas + excluir job na lista).
+
 ## Backlog (sem prioridade definida)
 
 - [ ] **Módulo 3 (Conteúdo Admin) — concluído nesta rodada** (Eixos, Matérias, Perguntas+imagem, Fila de revisão — ver "Realizadas"). Pendências residuais específicas: badge `unread_review_events` do parceiro e link direto no e-mail de aprovação/rejeição (ambos dependem do Módulo 4 existir — ver entrada de 2026-07-20 acima).
@@ -313,7 +321,7 @@
 - [x] ~~Módulo 7, Fatia 3 (worker assíncrono — AIGEN-RF-004)~~ — concluída em 2026-07-25 (ver entrada acima).
 - [x] ~~Módulo 7, Fatia 4 (revisão de questões — AIGEN-RF-005 a 008)~~ — concluída em 2026-07-25 (ver entrada acima).
 - [x] ~~Módulo 7, Fatia 5 (desejável) — excluir job (AIGEN-RF-009)~~ — concluída em 2026-07-25 (ver entrada acima). **Backend do Módulo 7 100% completo.**
-- [ ] **UI web (`bomberquiz-web`) do Módulo 7** — plano em [`rf/ai-generation-ui-plano-implementacao.md`](rf/ai-generation-ui-plano-implementacao.md), fatiado em 6 partes. Fatias 1-4 concluídas (fundação, criar job, acompanhar job, histórico completo — ver entradas acima); faltam Fatia 5 (revisar questões geradas) e Fatia 6 (ações em lote + excluir job na lista).
+- [ ] **UI web (`bomberquiz-web`) do Módulo 7** — plano em [`rf/ai-generation-ui-plano-implementacao.md`](rf/ai-generation-ui-plano-implementacao.md), fatiado em 6 partes. Fatias 1-5 concluídas (fundação, criar job, acompanhar job, histórico completo, revisar questões geradas — ver entradas acima); falta só a Fatia 6 (ações em lote + excluir job na lista).
 - [x] ~~Preencher credenciais reais de `ANTHROPIC_API_KEY`/`R2_*` em `.env`~~ — feito em 2026-07-24, smoke test real confirmou os dois adapters (ver entrada da Fatia 0 acima).
 
 - [ ] Atualizar webhook do Mercado Pago para `https://api.bomberquiz.com.br/webhooks/mercado-pago` quando a integração for desenvolvida (ver Fase 2 do domínio acima).

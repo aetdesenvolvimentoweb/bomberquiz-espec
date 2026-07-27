@@ -2,7 +2,7 @@
 
 > Ver [`ai-generation.md`](ai-generation.md) para os RFs (**o quê**) e [`ai-generation-plano-implementacao.md`](ai-generation-plano-implementacao.md) para o backend, já 100% completo. Este documento é sobre **como** implementar a UI web (`bomberquiz-web`) que consome esse backend — o fatiamento, a ordem, e as decisões de design tomadas ao longo do ciclo. Progresso e achados de cada fatia ficam registrados em [`../tarefas.md`](../tarefas.md); este arquivo é o roteiro, não o changelog.
 
-**Status:** Plano criado em 2026-07-25. Fatias 1, 2, 3 e 4 concluídas (2026-07-25, 2026-07-26).
+**Status:** Plano criado em 2026-07-25. Fatias 1, 2, 3, 4 e 5 concluídas (2026-07-25, 2026-07-26, 2026-07-27).
 
 ## Contexto
 
@@ -65,7 +65,7 @@ Rotas em `src/app/router.tsx` (dentro do bloco `RequireAdmin`/`PanelLayout` já 
 | 2 | Criar job | Formulário completo (matéria + contagem + 2 PDFs), upload multipart, navega pro detalhe | ✅ concluída 2026-07-25 |
 | 3 | Acompanhar job | Polling (pending/processing) + visão de falha (failed) | ✅ concluída 2026-07-25 |
 | 4 | Histórico completo | Filtros (status/matéria) + paginação + resumo por job na lista | ✅ concluída 2026-07-26 |
-| 5 | Revisar questões | Visão "completed": tabela + editar/aprovar/descartar individual | pendente |
+| 5 | Revisar questões | Visão "completed": tabela + editar/aprovar/descartar individual | ✅ concluída 2026-07-27 |
 | 6 | Lote + excluir | Aprovar todas/descartar todas + exclusão de job (fluxo de confirmação em 2 passos) | pendente |
 
 ### Fatia 1 — Fundação ✅
@@ -98,11 +98,15 @@ Rotas em `src/app/router.tsx` (dentro do bloco `RequireAdmin`/`PanelLayout` já 
 - **Achado durante a verificação visual**: `summary` do backend não é `null` só para jobs `completed` — é calculado (podendo ser `{0,0,0}`) para qualquer job em `FINISHED_STATUSES` (`completed` **e** `failed`), já que a lógica olha para `ai_generated_questions` existentes, não para o status em si. Um job `failed` sem nenhuma questão gerada mostra corretamente "0 aprovadas/0 pendentes/0 descartadas" (não `—`) — comportamento correto do contrato, não um bug.
 - **Verificação**: `bun run typecheck` limpo. `bun run test`: 81 pass (+9 na página de lista: listagem, estado vazio, botão "Nova geração", badges de resumo, `—` quando sem resumo, `error_message` em failed, filtro de status, filtro de matéria, paginação), zero regressão. **Verificação visual via `run-bomberquiz-web`** — sem custo de Anthropic, é só leitura: como o único job do banco de dev pertence a outro admin (histórico é escopado por `created_by`, AIGEN-RF-003 CA-4 — corretamente mostrou vazio para o admin de teste), foram inseridos 2 jobs sintéticos direto no Postgres de dev (1 `completed` com 2 aprovadas/1 pendente, 1 `failed` com `error_message`) só para exercitar a tela; confirmados visualmente os 2 filtros funcionando contra a API real (status=failed e matéria específica cada um reduzindo a 1 linha corretamente) e os badges de resumo corretos. Os 2 jobs sintéticos e suas questões foram removidos do banco ao final (por ID exato); o job pré-existente de outro admin não foi tocado.
 
-### Fatia 5 — Revisar questões geradas (AIGEN-RF-005 a 007)
+### Fatia 5 — Revisar questões geradas (AIGEN-RF-005 a 007) ✅
 
-- Sub-visão "completed" de `AiGenerationJobDetailPage`: tabela de questões geradas.
-- `ai-generation-question-edit-dialog.tsx` (editar), `ai-generation-discard-dialog.tsx` (descartar com motivo opcional), aprovar direto (sem dialog, como no fluxo de parceiro).
-- Verificação manual: editar, aprovar (confirmar que a pergunta aparece em "Perguntas" como publicada) e descartar uma questão real.
+- `features/ai-generation/schemas.ts` ganhou `editGeneratedQuestionFormSchema` (mesmos limites de `UpdateAiGeneratedQuestionBodySchema`) e `discardGeneratedQuestionFormSchema` (motivo opcional, até 500 caracteres).
+- `ai-generation-api.ts` ganhou 3 hooks: `useUpdateGeneratedQuestion` (PATCH), `useApproveGeneratedQuestion` (POST .../approve, sem dialog — aprova direto, mesmo fluxo de `useApproveQuestion` no parceiro), `useDiscardGeneratedQuestion` (POST .../discard, `reason` opcional). Todos invalidam `[...AI_GENERATION_JOB_QUERY_KEY, jobId]` para o detalhe refletir a mudança na hora.
+- `ai-generation-question-edit-dialog.tsx`: fork simplificado de `question-form-dialog.tsx` — sem matéria/imagem/`resetStats` (não se aplicam a uma questão ainda não publicada), só statement/alternativas/gabarito/justificativa/fonte.
+- `ai-generation-discard-dialog.tsx`: fork de `reject-question-dialog.tsx`, mas com motivo **opcional** (AIGEN-RF-007 CA-1, diferente da rejeição obrigatória do fluxo de parceiro).
+- `AiGenerationJobDetailPage`: a sub-visão `completed` ganhou uma tabela de revisão (reaproveitando `job.questions`, já retornado pelo próprio `GET /jobs/:id` desde a Fatia 1 — nenhum hook/query novo para listar) — 1 linha por questão, badge de `review_status` (Pendente/Aprovada/Descartada), tag "(editado)" quando `edited === true`, e os 3 botões de ação (Editar/Aprovar/Descartar) só aparecem quando `review_status === "pending"`.
+- **Achado durante a verificação visual**: `question_data` é armazenado no Postgres em **camelCase** (`correctIndex`, `sourceReference`), não snake_case como a resposta HTTP — o repositório (`ai-generated-question.repository.ts`) mapeia `row.questionData.correctIndex` direto do JSONB. Inserir dados sintéticos com chaves snake_case (espelhando a resposta da API) causa 500 silencioso (`correct_index` vira `undefined`, falha na validação do schema de resposta). Documentado aqui para não repetir o erro em verificações futuras.
+- **Verificação**: `bun run typecheck` limpo. `bun run test`: 85 pass (+4 na página de detalhe: tabela de revisão com ações condicionadas a `pending`, aprovar, editar, descartar), zero regressão. **Smoke manual real** via `run-bomberquiz-web`: inserido 1 job sintético `completed` (sem custo de Anthropic) com 3 questões `pending` para o admin de teste; via Playwright, editado o enunciado de uma questão (confirmado o PATCH real + tag "(editado)"), aprovada essa mesma questão (badge "Aprovada", toast "Questão aprovada e publicada.", e confirmado que ela aparece em `/painel/perguntas` com status "Publicada"), e descartada outra questão com motivo (badge "Descartada"). Job sintético, suas 3 questões geradas e a `Question` real criada pela aprovação foram todos removidos ao final por ID exato; o job pré-existente de outro admin não foi tocado.
 
 ### Fatia 6 — Ações em lote + excluir job (AIGEN-RF-008/009)
 
