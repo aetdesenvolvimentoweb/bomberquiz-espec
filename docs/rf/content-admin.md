@@ -306,7 +306,7 @@ Inbox de perguntas enviadas por parceiros (Módulo 4) que aguardam aprovação.
 
 **Critérios de aceitação:**
 - **CA-1:** `GET /admin/questions/pending` retorna apenas perguntas com `status=pending_review`, ordenadas por `created_at` ascendente (mais antigas primeiro — FIFO).
-- **CA-2:** Mesmos campos da listagem normal (CONT-RF-009 CA-1) + `submitted_at` (`created_at` da pergunta) + `partner_pending_count` (quantas outras pendências o mesmo parceiro tem).
+- **CA-2:** Mesmos campos da listagem normal (CONT-RF-009 CA-1) + `submitted_at` (coluna própria desde o Módulo 4, Slice 2 — `created_at` da pergunta era usado como proxy antes de existir o fluxo de reenvio do parceiro; reenvio após rejeição faria a ordem FIFO ficar errada com o proxy) + `partner_pending_count` (quantas outras pendências o mesmo parceiro tem).
 - **CA-3:** Paginação padrão 20.
 - **CA-4:** Endpoint também aceita filtro por `author_id` (revisar todas as pendências de um parceiro de uma vez).
 

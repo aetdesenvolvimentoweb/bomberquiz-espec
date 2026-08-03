@@ -59,7 +59,7 @@ Parceiro inicia o cadastro de uma nova pergunta. Toda nova pergunta nasce como `
 - **CA-1:** `POST /me/questions` com `{ subject_id, statement, alternatives[4], correct_index, explanation, source_reference?, image_url? }`. Mesmas validações de CONT-RF-010 (regras gerais do Módulo 3).
 - **CA-2:** `subject_id` deve apontar para matéria `active`. Qualquer matéria ativa é permitida — sem vínculo por especialidade.
 - **CA-3:** Em sucesso, pergunta nasce com `status=draft`, `author_id=<parceiro>`. HTTP 201 com payload completo. Entrada em `audit_log` com `action=create_draft_question`.
-- **CA-4:** Cadastros parciais são aceitos — `statement` e `subject_id` são obrigatórios; o restante pode ser preenchido em edição posterior. **Mas** submissão para revisão (PART-RF-004) exige todos os campos.
+- **CA-4:** ~~Cadastros parciais são aceitos~~ **Revisado na implementação (Módulo 4, Slice 2):** `Question` (entidade compartilhada com o admin, Módulo 3) exige incondicionalmente as 4 alternativas distintas/não-vazias e `correct_index` 0-3 já na construção — não há instância "incompleta". Afrouxar esse invariante só para rascunho de parceiro exigiria mudança mais profunda no domínio compartilhado com o admin (decisão tomada com o usuário: não vale o risco). Na prática, **todo rascunho do parceiro já nasce completo**, igual ao admin (CONT-RF-010) — a única diferença real é `status` sempre `draft` (nunca `published` direto). Submissão para revisão (PART-RF-004) não precisa revalidar completude por esse motivo.
 - **CA-5:** Limite de 50 rascunhos em aberto por parceiro (regras gerais). Acima disso → E-2.
 
 **Erros previstos:**
