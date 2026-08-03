@@ -335,6 +335,6 @@ Mostra a evolução do desempenho do próprio cliente **ao longo do tempo** (agr
 
 ## Pendências deste módulo — adiadas conscientemente para pós-MVP
 
-- **QUIZ-P-01 — Modo offline.** Quiz totalmente offline com sincronização. Exige resolução de conflitos de stats; reavaliar após observação do uso real do PWA.
+- **QUIZ-P-01 — Modo offline.** Quiz totalmente offline com sincronização. Exige resolução de conflitos de stats (ver `submit-answer.usecase.ts` — validação de tempo limite usa relógio do servidor, sem timestamp do cliente) e mudança de contrato da API; reavaliar após observação do uso real do PWA. Instrumentação para essa observação já existe (2026-08-03): tabela `pwa_events`, evento `quiz_offline_period` com `duration_ms` por sessão — ver `docs/arquitetura.md` § Observabilidade e `tarefas.md`.
 - **QUIZ-P-04 — Modo "pontos fracos".** Sistema sorteia das matérias com menor acurácia do cliente. Requer volume mínimo de histórico para ser útil (≥ 10 respostas/matéria); reavaliar quando base de usuários gerar volume.
 - **QUIZ-P-05 — Filtro por nível de dificuldade no sorteio.** "Só hards" / "só easies". Sorteio uniforme em `published` é suficiente no MVP; reavaliar quando volume de questões por dificuldade tornar o filtro útil.

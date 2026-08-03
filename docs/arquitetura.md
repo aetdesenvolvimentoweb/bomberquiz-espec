@@ -190,11 +190,12 @@ HTTP Request
 - **Integration** (`tests/integration/`): use cases conectados a infra real (Drizzle + Neon branch dedicado por job CI; ou Postgres em Docker para local). Cada teste roda em transação revertida ao final.
 - **E2E** (`tests/e2e/`): HTTP black-box contra app inicializado, banco real.
 
-### Observabilidade (futuro)
+### Observabilidade
 
-- Logs estruturados (pino).
-- Erros para Sentry (free tier).
-- Métricas básicas via Fly.io.
+- **Erros para Sentry** (free tier, ~5k eventos/mês): integrado em 2026-08-03 no frontend (`web/src/lib/monitoring/sentry.ts`, hooks em `global-error-handler.ts`/`route-error-boundary.tsx`) e no backend (`api/src/infra/monitoring/sentry.ts`, hook em `app.onError`/scheduler/e-mail). Gated por `SENTRY_DSN`/`VITE_SENTRY_DSN` (opcionais — sem eles o SDK não inicializa); falta criar a conta/organização Sentry e configurar os DSNs como secret em produção para ativar de fato. Eventos correlacionados entre front e back pelo mesmo `request_id` do envelope de erro (ver ADR-0031). PII mascarada antes do envio (cookies, headers de auth, e-mail).
+- **Telemetria de uso do PWA/quiz**: tabela própria `pwa_events` (Postgres/Neon, não um SaaS de analytics — ver ADR-0031/tarefas.md) grava eventos de instalação (`pwa_install_*`) e de período offline durante quiz em andamento (`quiz_offline_period`, com `duration_ms`), via `POST /events`. Objetivo: embasar com dados reais a decisão de QUIZ-P-01 (quiz offline com sincronização).
+- Logs estruturados (pino): ainda não implementado (futuro).
+- Métricas básicas via Fly.io: ainda não implementado (futuro).
 
 ### Domínios, URLs e cookies
 
@@ -444,6 +445,7 @@ bomberquiz-web/
 - Cloudflare R2: $0 (até 10 GB).
 - Cloudinary: $0 (free tier — 25 GB / 25k transformações/mês).
 - Resend: $0 (até 3k e-mails/mês).
+- Sentry: $0 (free tier, ~5k eventos/mês — dimensionado contra os 300–2.000 usuários esperados, ver ADR-0031).
 - Mercado Pago: % por transação (sem custo fixo).
 - WhatsApp Cloud API: $0 (até 1k conversas/mês na camada inicial).
 
