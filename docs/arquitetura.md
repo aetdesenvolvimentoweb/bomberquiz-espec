@@ -422,7 +422,7 @@ bomberquiz-web/
 ### Cliente HTTP
 
 - Gerado a partir do `openapi.json` do backend (ex.: `openapi-fetch` + `openapi-typescript`).
-- Atualização do cliente é uma etapa no CI: baixar a spec do backend deployado em staging e regerar tipos.
+- Atualização do cliente é manual por ora (`bun run openapi:generate` contra a API local) — ver ADR-0037 sobre a aposentadoria do ambiente de staging.
 - **Planta do contrato:** [`api.md`](api.md) consolida o inventário de endpoints e as convenções transversais que a spec gerada deve refletir.
 
 ---
@@ -431,15 +431,15 @@ bomberquiz-web/
 
 ### Ambientes
 - **Local:** Bun roda backend; Vite roda frontend; Postgres em Docker (ou branch dev no Neon).
-- **Staging:** branch `staging` em ambos os repos → deploy automático (Fly.io app `bomberquiz-api-staging`; Cloudflare Pages preview).
 - **Produção:** branch `main` → deploy automático após CI verde.
+- Sem ambiente de staging — aposentado em 2026-08-03 (ADR-0037), nunca chegou a ser exercitado de fato.
 
 ### CI/CD (GitHub Actions)
-- `bomberquiz-api`: **implementado em 2026-07-07** (`.github/workflows/deploy.yml`) — hoje roda `typecheck` → `deploy` (push em `main` → app produção, push em `staging` → app staging via `flyctl deploy`); `lint` → unit → integration ficam como próximo passo, pendentes até essas ferramentas existirem no repo (ver `tarefas.md`).
+- `bomberquiz-api`: **implementado em 2026-07-07** (`.github/workflows/deploy.yml`) — hoje roda `typecheck` → `deploy` (push em `main` → app produção via `flyctl deploy`); `lint` → unit → integration ficam como próximo passo, pendentes até essas ferramentas existirem no repo (ver `tarefas.md`).
 - `bomberquiz-web`: lint → typecheck → unit → build → e2e (opcional) → deploy. Ainda não implementado.
 
 ### Custos esperados (free tiers no início)
-- Fly.io: $0 (2 VMs pequenas — 1 máquina por app, `bomberquiz-api` + `bomberquiz-api-staging`; ver ADR-0027 sobre reduzir do padrão HA de 2 máquinas/app do Fly).
+- Fly.io: $0 (1 VM pequena, só `bomberquiz-api` — staging aposentado, ADR-0037; ver ADR-0027 sobre reduzir do padrão HA de 2 máquinas/app do Fly).
 - Neon: $0 (0.5 GB).
 - Cloudflare Pages: $0 (sites ilimitados).
 - Cloudflare R2: $0 (até 10 GB).

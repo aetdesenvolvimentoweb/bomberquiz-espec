@@ -183,4 +183,4 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 - Tags da spec = nome do módulo (Auth, Perfil, Conteúdo Admin, Conteúdo Parceiro, Quiz, Assinaturas). Facilita a UI Scalar e a navegação do cliente gerado.
 - `operationId` estável e legível (ex.: `startQuiz`, `submitAnswer`, `grantCourtesy`) — vira o nome do método no cliente type-safe do frontend.
 - Schemas de paginação e do envelope de erro são **componentes reutilizáveis** (definidos uma vez, referenciados em todas as rotas).
-- A spec gerada em staging é baixada pelo CI do `bomberquiz-web` para regerar o cliente (arquitetura.md § Cliente HTTP).
+- A spec é baixada manualmente da API local para regerar o cliente (`bun run openapi:generate`) — arquitetura.md § Cliente HTTP. Sem staging (ADR-0037), não há mais um backend deployado intermediário pra servir isso automaticamente.
