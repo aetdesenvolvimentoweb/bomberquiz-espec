@@ -4,6 +4,8 @@
 
 **Status:** Todas as 6 fatias concluídas (2026-07-24, 2026-07-24, 2026-07-25, 2026-07-25, 2026-07-25, 2026-07-25). **Backend do módulo 100% completo** (criar → consultar → processar → revisar → excluir); só falta o plano de UI web (ainda não fatiado).
 
+> ⚠️ **Retirado de produção em 2026-07-27**, mesmo dia da conclusão do frontend (ver plano de UI) — ver [`../decisoes.md`](../decisoes.md) § ADR-0039. O log de fatias abaixo permanece como registro histórico do que foi de fato construído.
+
 ## Contexto
 
 O `bomberquiz-api` tem os Módulos 1, 2, 3 e 5 completos (backend + frontend). Os Módulos 4 (Conteúdo Parceiro), 6 (Assinaturas) e 7 (Geração de Questões por IA) ainda não têm código. O Módulo 7 é **exclusivo para administradores** (ADR-0021, já bem documentado em `ai-generation.md`, `decisoes.md` e `api.md`), então sua implementação não interfere nos Módulos 4/6 nem depende deles. A especificação funcional já é madura e estável: 9 RFs (`AIGEN-RF-001` a `009`) em [`ai-generation.md`](ai-generation.md) e 6 ADRs (0021–0026) em [`../decisoes.md`](../decisoes.md). Este ciclo é sobre **como** implementar, não **o quê** — os RFs/ADRs não são redesenhados aqui.

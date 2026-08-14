@@ -450,3 +450,13 @@ bomberquiz-web/
 - WhatsApp Cloud API: $0 (até 1k conversas/mês na camada inicial).
 
 Total mensal inicial estimado: **R$ 0** (custos só aparecem quando há receita de assinaturas pagando taxa do gateway).
+
+### Ferramenta interna: `ai-bot` (fora do MVP)
+
+Substitui operacionalmente o pipeline de geração de questões por IA retirado de produção em 2026-07-27 (Módulo 7, ver ADR-0039 em `decisoes.md`). **Não é módulo do MVP nem parte da spec de requisitos** — é tooling interno, documentado aqui só como referência técnica.
+
+- Vive em `bot/` (`bot/api` + `bot/web`), repositório git **separado** de `bomberquiz-api`/`bomberquiz-web`/`requisitos` — fora do escopo deste diretório de documentação.
+- Roda **apenas na máquina local do admin**; nunca é implantado (sem Fly.io/Cloudflare). CORS restrito a `localhost`.
+- Mesmo stack do backend/frontend principal (Bun + Hono no `api`, Vite + React no `web`), mais `@anthropic-ai/sdk` e `unpdf` (extração de texto de PDF) no lado `api`.
+- **Auth:** nenhum sistema próprio — autentica como admin contra o `bomberquiz-api` de produção via login real (a mesma barreira de acesso já existente), mantendo a sessão só em memória.
+- **Publicação:** questões aprovadas são enviadas via `POST /admin/questions`, endpoint que já existia — nenhuma mudança foi necessária em `bomberquiz-api` para viabilizar isso. Perguntas publicadas por essa via recebem `source="ai_bot"` (ver `rf/content-admin.md` § Estrutura de dados).

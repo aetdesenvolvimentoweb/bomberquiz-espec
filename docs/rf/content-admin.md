@@ -39,7 +39,9 @@
 - `id`, `axis_id` (FK), `name` (único dentro do eixo, case-insensitive), `official_source?` (texto livre), `status`, `created_at`, `archived_at?`.
 
 ### Pergunta
-- `id`, `subject_id` (FK matéria), `statement` (enunciado), `alternatives` (array de exatamente 4 strings), `correct_index` (0..3), `explanation` (justificativa, obrigatória), `source_reference?` (texto livre), `image_url?` (URL pública no Cloudinary), `status`, `author_id` (FK users), `created_at`, `updated_at`, `published_at?`, `archived_at?`, `stats_reset_at?`.
+- `id`, `subject_id` (FK matéria), `statement` (enunciado), `alternatives` (array de exatamente 4 strings), `correct_index` (0..3), `explanation` (justificativa, obrigatória), `source_reference?` (texto livre), `image_url?` (URL pública no Cloudinary), `status`, `source` (`manual`|`ai_bot`, default `manual` — quem/o quê autorou a pergunta; forçado no servidor, nunca aceito do corpo da requisição), `author_id` (FK users), `created_at`, `updated_at`, `published_at?`, `archived_at?`, `stats_reset_at?`.
+
+`source="ai_bot"` identifica perguntas publicadas pela ferramenta local `ai-bot` (fora do MVP/spec — ver `../CLAUDE.md` e ADR-0039), que se autentica como um admin comum e usa `POST /admin/questions` normalmente; nada no fluxo deste endpoint muda por causa disso, exceto o valor gravado em `source`.
 
 ---
 

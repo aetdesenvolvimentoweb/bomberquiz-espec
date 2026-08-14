@@ -161,19 +161,7 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 
 ### Módulo 7 — Geração de Questões por IA (`ai-generation.md`)
 
-| Método | Rota | Acesso | RF | Descrição |
-|---|---|---|---|---|
-| POST | `/admin/ai-generation/jobs` | admin | AIGEN-RF-001 | Cria job (upload PDFs + config) — `multipart`; retorna HTTP 202 |
-| GET | `/admin/ai-generation/jobs` | admin | AIGEN-RF-003 | Lista histórico de jobs do admin |
-| GET | `/admin/ai-generation/jobs/:id` | admin | AIGEN-RF-002 | Consulta status + questões geradas (polling) |
-| PATCH | `/admin/ai-generation/jobs/:id/questions/:qid` | admin | AIGEN-RF-005 | Edita questão gerada antes de aprovar |
-| POST | `/admin/ai-generation/jobs/:id/questions/:qid/approve` | admin | AIGEN-RF-006 | Aprova questão individual → cria em `questions` |
-| POST | `/admin/ai-generation/jobs/:id/questions/:qid/discard` | admin | AIGEN-RF-007 | Descarta questão individual |
-| POST | `/admin/ai-generation/jobs/:id/approve-all` | admin | AIGEN-RF-008 | Aprova todas as questões `pending` do job |
-| POST | `/admin/ai-generation/jobs/:id/discard-all` | admin | AIGEN-RF-008 | Descarta todas as questões `pending` do job |
-| DELETE | `/admin/ai-generation/jobs/:id` | admin | AIGEN-RF-009 | Remove job e questões não aprovadas |
-
-> AIGEN-RF-004 (processamento assíncrono: extração PDF + chamada LLM) é um **worker interno** do scheduler (ADR-0023), não endpoint.
+> ⚠️ **Retirado de produção em 2026-07-27.** As rotas `/admin/ai-generation/*` descritas em `ai-generation.md` (AIGEN-RF-001 a 009) foram implementadas e depois removidas por completo de `bomberquiz-api` no mesmo dia, após um incidente de OOM em produção — ver [`decisoes.md`](decisoes.md) § ADR-0039. Nenhuma dessas rotas existe hoje; não há checklist de conformidade a manter aqui. Geração de questões por IA hoje acontece via `ai-bot`, ferramenta local fora da spec de requisitos (ver `../CLAUDE.md`), que publica através de `POST /admin/questions` já existente.
 
 ---
 

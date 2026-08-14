@@ -1,5 +1,7 @@
 # Módulo 7 — Geração de Questões por IA
 
+> ⚠️ **Descontinuado em produção (2026-07-27).** Este módulo foi implementado por completo em `bomberquiz-api`/`bomberquiz-web` e, no mesmo dia da conclusão, retirado depois de um incidente de OOM em produção (PDF com fonte TrueType malformada, crash-loop na única VM do Fly.io). O código foi removido de ambos os repositórios; nenhuma das rotas/telas abaixo existe hoje. Foi substituído operacionalmente por `ai-bot` (ferramenta local, fora do MVP e da spec de requisitos — ver `../CLAUDE.md`). Este arquivo é mantido como registro histórico da especificação, referenciado pelas ADRs 0021–0026. Ver [`../decisoes.md`](../decisoes.md) § ADR-0039 para o racional completo da retirada.
+
 > Identificador dos RFs deste módulo: `AIGEN-RF-NNN`.
 > Ver [`../requisitos.md`](../requisitos.md) para visão geral; [`../decisoes.md`](../decisoes.md) para ADRs; [`../arquitetura.md`](../arquitetura.md) para implementação.
 > Ciclo de implementação (fatiamento, status por fatia, decisões técnicas): [`ai-generation-plano-implementacao.md`](ai-generation-plano-implementacao.md).
@@ -373,6 +375,8 @@ Remove um job e suas questões não aprovadas do sistema. Questões já aprovada
 ---
 
 ## Pendências deste módulo
+
+> As pendências abaixo ficaram órfãs em 2026-07-27: descrevem evoluções do pipeline em produção, que foi retirado nessa data (ver banner no topo do arquivo e ADR-0039). Mantidas apenas como registro — não há decisão pendente real, pois não há módulo ativo a que se apliquem.
 
 - **AIGEN-P-01 — Notificação de conclusão do job.** Quando o job muda para `completed` ou `failed`, o admin deve ser avisado sem precisar ficar em polling ativo. Canal preferido: badge/toast in-app (a integrar com o sistema de notificações que vier a existir). Para o MVP, polling automático do frontend a cada 3 s enquanto `status ∈ {pending, processing}` é suficiente; push ou SSE pode vir depois.
 - **AIGEN-P-02 — Retry de job com falha.** Um job em `failed` poderia ser "re-tentado" sem o admin ter que subir os PDFs novamente (se ainda estivessem em R2). Mas a ADR-0024 exclui os PDFs ao término — logo, retry exige novo upload. Decidir se vale guardar os PDFs por mais tempo (custo vs. comodidade) — adiado pós-MVP.

@@ -136,7 +136,7 @@ Organizados em **7 módulos**, cada um em arquivo próprio sob `docs/rf/`. Ident
 | 4 | Conteúdo (parceiro) | [`rf/content-partner.md`](rf/content-partner.md) | ✅ Rascunho |
 | 5 | Quiz (cliente) | [`rf/quiz.md`](rf/quiz.md) | ✅ Rascunho |
 | 6 | Assinaturas e cortesias | [`rf/subscriptions.md`](rf/subscriptions.md) | ✅ Rascunho |
-| 7 | Geração de questões por IA | [`rf/ai-generation.md`](rf/ai-generation.md) | ✅ Rascunho |
+| 7 | Geração de questões por IA | [`rf/ai-generation.md`](rf/ai-generation.md) | ⚠️ Rascunho (retirado de produção, ver ADR-0039) |
 
 Pendências por módulo (decisões a tomar antes da implementação) ficam no rodapé de cada arquivo, identificadas como `<MODULO>-P-NN`.
 
@@ -188,7 +188,7 @@ O **inventário consolidado de endpoints** (todos os módulos) e as convenções
 - **E-mail transacional:** **Resend** (confirmado, ADR-0012). Canal de suporte do MVP também é e-mail (`SUPPORT_EMAIL`). Migração para SES localizada na porta `EmailSender` se o volume crescer.
 - **Armazenamento de imagens de questões:** Cloudinary (revisado 2026-07-19 — antes Cloudflare R2, ver ADR-0012) — mesmo provedor usado para avatares.
 - **Armazenamento de avatares:** Cloudinary (free tier, transformações automáticas) — ver ADR-0013.
-- **Armazenamento de backups e PDFs temporários (Módulo 7):** Cloudflare R2 (sem cobrança de egress) — inalterado.
+- **Armazenamento de backups:** Cloudflare R2 (sem cobrança de egress) — inalterado. (O uso original para PDFs temporários do Módulo 7 não se aplica mais desde a retirada do pipeline em 2026-07-27, ver ADR-0039.)
 
 ### Princípios
 - Clean Architecture / Hexagonal — domínio puro, infra plugável.
@@ -251,5 +251,9 @@ O **inventário consolidado de endpoints** (todos os módulos) e as convenções
 - ✅ Equivalência "questões cadastradas ↔ tempo de assinatura" → **sem regra automática no MVP** — admin observa o trabalho e doa manualmente. SUB-P-02.
 
 ### Em aberto
-- Todos os módulos funcionais do MVP estão cobertos; pendências por módulo estão nos rodapés de `rf/*.md`. O Módulo 7 (IA) é o único com pendências genuinamente abertas hoje (AIGEN-P-01 a AIGEN-P-04 — canal de notificação, política de retry, visibilidade entre admins, escolha de modelo — ver rodapé de `rf/ai-generation.md`); os demais módulos têm suas pendências resolvidas (ver "Resolvidas" acima).
-- **Pendências não-funcionais/de negócio** (ver `docs/tarefas.md`): definição de CNPJ/regime tributário e NFS-e (ADR-0019); redação da Política de Privacidade + Termos (bloqueio de lançamento); spike do Better-Auth (ADR-0018).
+- Todos os módulos funcionais do MVP estão cobertos; pendências por módulo estão nos rodapés de `rf/*.md`. As pendências do Módulo 7 (AIGEN-P-01 a AIGEN-P-04, no rodapé de `rf/ai-generation.md`) ficaram órfãs em 2026-07-27 — o pipeline a que se referem foi retirado de produção nessa data (ver `decisoes.md` § ADR-0039) e não roda mais. Os demais módulos (1 a 5) têm suas pendências resolvidas (ver "Resolvidas" acima). **Módulo 6 (Assinaturas) é hoje o único módulo com lacuna real de implementação** — a especificação está madura e sem pendências abertas (`rf/subscriptions.md`), falta apenas o código.
+- **Pendências não-funcionais/de negócio, bloqueiam o lançamento público** (detalhe de cada item em `docs/tarefas.md`):
+  - 🚩 **Política de Privacidade + Termos de Uso** — ainda não redigidos. Beta privado pode rodar com versão preliminar; versão final exige revisão jurídica antes da abertura pública (sistema já tem `consent_version` e reaceite, PROF-RF-006).
+  - 🚩 **CNPJ e regime tributário** (ADR-0019) — decisão em aberto; bloqueia também a emissão de NFS-e (manual vs. integração com emissor, fora do MVP) e a configuração do WhatsApp Cloud API (exige CNPJ/KYC).
+  - **Webhook do Mercado Pago** — não configurado no painel do MP; pendente porque a integração de pagamentos (Módulo 6) ainda não existe.
+  - **Provedor de WhatsApp** (Cloud API vs. Z-API) — decisão adiada conscientemente desde ADR-0012; WhatsApp não é canal ativo no MVP.

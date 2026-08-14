@@ -4,6 +4,8 @@
 
 **Status:** Plano criado em 2026-07-25. **Concluído em 2026-07-27** — Fatias 1 a 6 todas concluídas (2026-07-25, 2026-07-26, 2026-07-27). Módulo 7 (Geração de Questões por IA) fica 100% completo, backend + frontend.
 
+> ⚠️ **Retirado de produção em 2026-07-27**, mesmo dia desta conclusão — ver [`../decisoes.md`](../decisoes.md) § ADR-0039. O log de fatias abaixo permanece como registro histórico do que foi de fato construído.
+
 ## Contexto
 
 O backend do Módulo 7 está 100% completo (Fatias 0-5): criar job (2 PDFs + matéria + quantidade) → acompanhar status (`pending`→`processing`→`completed`/`failed`) → revisar questões geradas (editar/aprovar/descartar, individual e em lote) → excluir job. Nenhuma tela existe ainda em `bomberquiz-web` para esse fluxo — é o único item pendente do módulo. Este plano fatia o desenvolvimento do frontend em 6 fatias verticais, mesmo espírito de risco decrescente/incremento demonstrável usado no fatiamento do backend, para que cada fatia seja implementável e verificável (inclusive visualmente, via `run-bomberquiz-web`) de forma independente.

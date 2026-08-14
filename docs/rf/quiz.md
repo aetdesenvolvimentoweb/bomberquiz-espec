@@ -289,6 +289,8 @@ Cliente zera o próprio histórico de desempenho. Atende cenários como "voltei 
 **Descrição:**
 Endpoints de quiz (`POST /quizzes`, `POST /quizzes/:id/answers`, `GET /me/performance`) só funcionam quando o cliente está em **período gratuito ativo** **ou** com **assinatura vigente** (paga ou doada). Bloqueio retorna HTTP 402 com payload sinalizando a UI a oferecer planos.
 
+> ⚠️ **Status de implementação:** o Módulo 5 (Quiz) foi implementado **sem** este bloqueio — decisão deliberada, já que `user.access_status` só existe quando o Módulo 6 for construído (ver Pré-condições acima). O middleware está com o slot pronto para receber um `requireActiveAccess`, mas hoje é um no-op: qualquer usuário autenticado usa o quiz livremente, indefinidamente, sem checagem de trial ou assinatura. Este RF é a especificação de destino, a ser implementada junto do Módulo 6. Ver item correspondente no Backlog de `../tarefas.md`.
+
 **Critérios de aceitação:**
 - **CA-1:** Middleware avalia, a cada request a endpoint de quiz, se `user.access_status` é `active` (valor calculado pelo Módulo 6, consolidando trial + subscriptions). Se não, retorna HTTP 402 com `{ reason: "subscription_required", trial_used: boolean, last_active_until: "..."? }`.
 - **CA-2:** Visualização do **histórico** (QUIZ-RF-006) e do resultado de quizzes passados (QUIZ-RF-005) **permanece disponível** mesmo sem assinatura ativa — é apenas leitura de dados próprios.
