@@ -132,7 +132,8 @@ Cliente escolhe plano e método de pagamento (opcionalmente aplica cupom). Siste
 Endpoint que recebe notificações do Mercado Pago e atualiza estado interno de `payments` e `subscriptions`. Toda confirmação de pagamento sólido (`approved`) gera/estende assinatura.
 
 **Critérios de aceitação:**
-- **CA-1:** `POST /webhooks/mercado-pago` — endpoint público; **valida assinatura HMAC** do header `x-signature` contra segredo `MP_WEBHOOK_SECRET`. Falha → HTTP 401, ignora.
+- **CA-1:** `POST /webhooks/mercado-pago` — endpoint público; **valida assinatura HMAC** do header `x-signature` contra segredo `MP_WEBHOOK_SECRET`. O manifest do HMAC usa o `data.id` da **query string** da notificação (`?data.id=...&type=...`) — é sobre esse valor que o MP assina (doc oficial valida com `req.query['data.id']`), nunca sobre o `data.id` do corpo. Falha → HTTP 401, ignora.
+- **CA-8:** **Contrato de entrega do MP: autenticou, responde 200.** Notificação com assinatura válida cujo pagamento não existe localmente (ex.: simulador do painel, que envia `data.id` fictício) ou cujo tópico não é rastreado (`type` ≠ `order`) → HTTP 200 com `ignored` no corpo e log para investigação — **nunca 404/erro**: o MP trata qualquer status ≠ 200/201 como falha de entrega e reentrega a cada 15 minutos, marcando o endpoint como falho no painel.
 - **CA-2:** Para evento `payment.updated` com `status=approved`: localiza `payments` por `mp_payment_id`, marca como `paid`, `paid_at=now()`. Cria/estende `subscriptions`:
   - Se cliente **não tem** assinatura ativa: `start_at=now()`, `end_at=now() + plan.duration_days`.
   - Se **tem** assinatura `paid` ativa: `start_at=now()`, `end_at=current_subscription.end_at + plan.duration_days` (renovação antecipada **acumula** dias). Cortesias vigentes também acumulam (regra ADR-0006).
@@ -144,8 +145,8 @@ Endpoint que recebe notificações do Mercado Pago e atualiza estado interno de 
 - **CA-7:** Em sucesso de pagamento, sistema **envia e-mail ao cliente** confirmando pagamento, plano, novo `end_at` e link para o comprovante MP (`mp_receipt_url`).
 
 **Erros previstos:**
-- **E-1:** Assinatura HMAC inválida → HTTP 401, log.
-- **E-2:** `payments` não encontrado → HTTP 404 (registra evento para investigação).
+- **E-1:** Assinatura HMAC inválida → HTTP 401, log de diagnóstico (sem vazar segredo). Causa mais comum: `MP_WEBHOOK_SECRET` copiado do modo errado do painel do MP (teste × produtivo — cada modo tem segredo próprio).
+- **E-2:** `payments` não encontrado → HTTP 200 com `ignored: "unknown_payment"` e log para investigação (ver CA-8 — respondia 404 até 2026-08-18, o que violava o contrato de entrega do MP e fazia o simulador do painel reportar falha).
 
 ---
 
