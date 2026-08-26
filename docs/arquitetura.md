@@ -171,6 +171,7 @@ HTTP Request
 - `subscription_plans` — id, slug (`monthly`/`quarterly`/`semiannual`/`annual`), name, duration_days, pix_price (centavos), card_price (centavos), max_installments, is_active, created_at, updated_at.
 - `subscriptions` — id, user_id, plan_id?, source (`trial`/`paid`/`courtesy`), courtesy_id?, payment_id?, start_at, end_at, status (`active`/`expired`/`revoked`/`pending_payment`), created_at.
 - `payments` — id, user_id, plan_id, method (`pix`/`mp_balance`/`card`), gross_amount, discount_amount, net_amount (centavos), coupon_id?, installments, mp_payment_id, mp_status, mp_receipt_url?, status (`pending`/`paid`/`failed`/`refunded`), paid_at?, refunded_at?, failure_reason?, created_at, updated_at.
+- `subscription_reminders` — id, user_id, milestone (`d7`/`d3`/`d1`/`d0`), target_end_at, sent_at. Único em (user_id, milestone, target_end_at) — é o índice que dá idempotência ao job de SUB-RF-007 e faz a renovação resetar os marcos sozinha.
 - `courtesies` — id, beneficiary_user_id, granted_by_admin_id, days_granted, start_at, end_at, category (`parceria`/`demonstracao`), notes?, revoked_at?, revoked_by_admin_id?, revocation_reason?, created_at.
 - `coupons` — id, code (unique, case-insensitive), discount_type (`percent`/`fixed_cents`), discount_value, valid_from?, valid_until?, max_uses?, used_count, is_active, applies_to_plan_slugs?, created_by_admin_id, created_at.
 - `user_access` — projeção derivada/materializada por usuário: access_status (`active`/`inactive`), active_until, source. _Calculada em SUB-RF-011; consumida por QUIZ-RF-009 e PROF-RF-014._
@@ -270,7 +271,7 @@ Scheduler **in-process** no backend (ADR-0017). Cada job é um caso de uso em `a
 | Job | Cadência | RF | Comportamento |
 |---|---|---|---|
 | Recalcular dificuldade das perguntas | diário 00:00 | CONT-RF-017 | Reclassifica `published` em `unrated`/`easy`/`medium`/`hard`. |
-| Lembretes de expiração de assinatura | diário 09:00 | SUB-RF-007 | E-mails D-7/D-3/D-1 e e-mail final D-0; um por marco. |
+| Lembretes de expiração de assinatura | diário 09:00 | SUB-RF-007 | ✅ implementado (2026-08-26). E-mails D-7/D-3/D-1 e e-mail final D-0; um por marco. **Também fecha as assinaturas vencidas** (`active` → `expired`), transição que nenhuma outra parte do sistema fazia. Idempotência via `subscription_reminders`, chaveada por (usuário, marco, `end_at` alvo) — não por `subscription_id`, que duplicaria e-mail para quem acumulou dias em duas compras. |
 | Expiração e auto-abandono de quiz | a cada 5 min | QUIZ-RF-004 | `expired` por cronômetro; `abandoned` após 24h sem atividade. |
 | Purga de sessões inativas | diário (ex. 03:00) | AUTH-RF-008 | Remove sessões com >7 dias sem uso. |
 | Dump lógico do banco | diário (ex. 04:00) | ADR-0020 | `pg_dump` → Cloudflare R2 (retenção rotativa). |
@@ -309,7 +310,7 @@ Todos enviados via **Resend** (ADR-0012), templates em **React Email**, links co
 | Pergunta aprovada | Admin aprova | CONT-RF-015 | "aprovada com alterações" se houve edição |
 | Pergunta precisa de ajustes | Admin rejeita | CONT-RF-016 | Motivo na íntegra + link de reedição |
 
-Falha de envio (Resend indisponível ou erro de API) é detectada, tentada novamente (até 3× com backoff curto) e fica em log estruturado quando esgota as tentativas — ver ADR-0031. Jobs de e-mail agendados (lembretes, expiração) devem ser idempotentes e não reenviar duplicado no mesmo marco/dia quando implementados (scheduler ainda não existe — ver `tarefas.md`).
+Falha de envio (Resend indisponível ou erro de API) é detectada, tentada novamente (até 3× com backoff curto) e fica em log estruturado quando esgota as tentativas — ver ADR-0031. Jobs de e-mail agendados são idempotentes: os lembretes de assinatura (implementados em 2026-08-26) reservam o marco em `subscription_reminders` **antes** de enviar, então uma queda entre reserva e envio custa um lembrete, nunca um e-mail duplicado. O filtro de contas `inactive`/`deleted` acima é aplicado na própria consulta do job.
 
 ---
 

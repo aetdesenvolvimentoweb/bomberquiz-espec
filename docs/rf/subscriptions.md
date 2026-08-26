@@ -218,11 +218,13 @@ Job diário avisa o cliente por e-mail quando sua assinatura está próxima do f
 **Critérios de aceitação:**
 - **CA-1:** Job roda **diariamente às 09:00** (`America/Sao_Paulo`).
 - **CA-2:** Para cada cliente com `access_status=active`, avalia `remaining_days`. Em **D-7**, **D-3** e **D-1**, envia e-mail "Sua assinatura vence em N dias — renove para não perder acesso". Inclui link de checkout.
-- **CA-3:** Envia **no máximo um e-mail por marco** (D-7, D-3, D-1) por assinatura — `subscription_reminders` (ou flag no próprio `subscriptions`) registra qual marco já foi disparado.
+- **CA-3:** Envia **no máximo um e-mail por marco** (D-7, D-3, D-1) por assinatura — `subscription_reminders` registra qual marco já foi disparado. **Precisão da implementação (2026-08-26):** o registro é por **usuário + marco + `end_at` alvo**, não por assinatura. Cada pagamento cria uma `subscription` nova (SUB-RF-004 CA-2), então chavear por assinatura mandaria e-mails contraditórios a quem acumulou dias em duas compras. O job avalia o acesso **consolidado** (maior `end_at` entre as ativas), que é o mesmo número que SUB-RF-011 usa.
 - **CA-4:** Trial recebe os mesmos lembretes (D-7 não se aplica — trial tem 7 dias). Apenas D-3 e D-1 são relevantes para trial; D-7 só dispara para planos pagos.
 - **CA-5:** Cliente que renova entre o marco D-7 e D-3 (estendendo a assinatura) **reseta** os marcos com base no novo `end_at`.
 - **CA-6:** **No dia da expiração** (D-0), sistema envia e-mail final "Sua assinatura expirou. Renove para voltar a acessar." — uma única vez. Não há nova insistência depois disso (TAP é cíclico — usuários voltam quando precisarem).
-- **CA-7:** Falha de envio (Resend down) fica em log; job é idempotente — re-executar no mesmo dia não duplica.
+- **CA-7:** Falha de envio (Resend down) fica em log; job é idempotente — re-executar no mesmo dia não duplica. **Implementação:** o marco é reservado (`INSERT … ON CONFLICT DO NOTHING`) **antes** do envio — uma queda entre reserva e envio custa um lembrete, o contrário custaria e-mail duplicado. Falha em um cliente não interrompe os demais.
+- **CA-8** (aditivo de implementação, 2026-08-26): o mesmo job **fecha as assinaturas vencidas** (`status=active` e `end_at < now()` → `expired`), executando essa etapa **depois** dos lembretes — expirar antes tiraria da consulta justamente quem deve receber o D-0. Até esta fatia, nada no sistema fazia essa transição: `active` só era abandonado por revogação, e o acesso só estava correto porque SUB-RF-011 compara `end_at` na leitura.
+- **CA-9** (aditivo de implementação, 2026-08-26): contas `inactive`/`deleted` são filtradas na própria consulta do job, conforme a regra geral de e-mails transacionais (PROF-RF-007 CA-4, catálogo em `arquitetura.md`).
 
 ---
 
