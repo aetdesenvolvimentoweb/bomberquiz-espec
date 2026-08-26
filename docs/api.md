@@ -144,7 +144,7 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 |---|---|---|---|---|
 | GET | `/plans` | público | SUB-RF-001 | Lista planos ativos (preços pré-cadastro) |
 | PATCH | `/admin/plans/:id` | admin | SUB-RF-001 | Edita plano (`pix_price`/`card_price`/…) |
-| POST | `/me/checkout` | sessão | SUB-RF-003 | Inicia checkout (PIX/saldo/cartão, cupom?) |
+| POST | `/me/checkout` | sessão | SUB-RF-003 | Inicia checkout. PIX e **cartão** implementados; saldo MP responde 422. Resposta discriminada por `method`: PIX devolve QR code + `expires_at`; cartão devolve o desfecho da autorização (`order_status`/`payment_status`/`status_detail`) e recebe `card_token`/`payment_method_id`/`device_id`/`installments` do Brick (ADR-0040). Cupom ainda não aceito. |
 | POST | `/webhooks/mercado-pago` | HMAC | SUB-RF-004 | Confirmação de pagamento (idempotente) |
 | GET | `/me/subscription` | sessão | SUB-RF-005 | Status da própria assinatura |
 | GET | `/me/payments` | sessão | SUB-RF-006 | Histórico de pagamentos |

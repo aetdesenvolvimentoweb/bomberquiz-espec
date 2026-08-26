@@ -111,9 +111,11 @@ Cliente escolhe plano e método de pagamento (opcionalmente aplica cupom). Siste
   - `method=card` aceita `installments ∈ 1..max_installments`; demais métodos ignoram esse campo (1 implícito).
   - `method != card` → `gross_amount = pix_price`; `method=card` → `gross_amount = card_price`.
 - **CA-3:** **Cupom (opcional):** se `coupon_code` informado, sistema valida via SUB-RF-014 CA-3. Cupom inválido **não bloqueia** o checkout — retorna `coupon_applied=false` no payload; cupom válido reduz `net_amount` e incrementa `used_count`.
-- **CA-4:** Sistema cria registro em `payments` com `status=pending`, `gross_amount`, `discount_amount`, `net_amount`, `coupon_id?`. Gera `mp_payment_id` chamando a API do Mercado Pago **com o `net_amount`**. Resposta HTTP 201 com:
-  - Para `pix` / `mp_balance`: `{ payment_id, qr_code_base64, qr_code_text, expires_at, gross_amount, discount_amount, net_amount, coupon_applied }`.
-  - Para `card`: `{ payment_id, checkout_url, gross_amount, discount_amount, net_amount, coupon_applied }` — frontend redireciona para tokenização do cartão pelo MP (não passa dados do cartão pelo backend).
+- **CA-4:** Sistema cria registro em `payments` com `status=pending`, `gross_amount`, `discount_amount`, `net_amount`, `coupon_id?`. Gera `mp_payment_id` chamando a API do Mercado Pago **com o `net_amount`**. Resposta HTTP 201, discriminada por `method`:
+  - Para `pix` / `mp_balance`: `{ method: "pix", payment_id, qr_code_base64, qr_code_text, expires_at, gross_amount, discount_amount, net_amount, coupon_applied }`.
+  - Para `card` — **contrato revisado em 2026-08-26 (ADR-0040)**: o request leva `card_token`, `payment_method_id`, `device_id` e `installments`, gerados no navegador pelo MercadoPago.js V2 / Card Payment Brick; a resposta é `{ method: "card", payment_id, order_status, payment_status, status_detail, installments, gross_amount, discount_amount, net_amount, coupon_applied }`. **Não existe `checkout_url`** — a especificação original descrevia Checkout Pro (fluxo hospedado com redirect), descartado em favor do Checkout Transparente sobre a mesma API de Orders do PIX. O princípio do CA-4 original é preservado: nenhum dado do cartão passa pelo backend, só o token de uso único.
+  - **A assinatura NÃO nasce no checkout**, nem no cartão (que é síncrono): o único caminho que cria assinatura continua sendo o webhook (SUB-RF-004), já idempotente e validado em produção. O cliente confirma o acesso por `GET /me/subscription`, como no PIX.
+  - `mp_balance` continua sem implementação (retorna 422 `method_not_supported_yet`) — é fluxo hospedado, e reabriria a complexidade de conta de teste "compradora" que a ADR-0040 evita.
 - **CA-5:** Cliente que tem **assinatura `paid` ativa** pode iniciar novo checkout — o pagamento futuro **estende** a assinatura quando confirmado (CA aplicada em SUB-RF-004).
 - **CA-6:** Rate limit: 5 checkouts pendentes simultâneos por cliente; o 6º falha com instrução para concluir os anteriores ou esperar expiração.
 
@@ -121,6 +123,11 @@ Cliente escolhe plano e método de pagamento (opcionalmente aplica cupom). Siste
 - **E-1:** Plano inativo → HTTP 422.
 - **E-2:** Falha de comunicação com Mercado Pago → HTTP 502; `payments.status=failed` registrado.
 - **E-3:** Rate limit excedido → HTTP 429.
+- **E-4** (cartão, 2026-08-26): `card_token`/`payment_method_id` ausentes → HTTP 422 `card_token_required` (indica falha de integração do frontend, não erro do cliente).
+- **E-5** (cartão, 2026-08-26): `installments` fora de `1..max_installments` → HTTP 422 `invalid_installments`, com `details.max_installments`.
+- **Nota (cartão):** uma recusa do emissor **não** é erro HTTP — o checkout responde 201 com `order_status`/`status_detail` descrevendo a recusa, e o pagamento vira `failed` quando o webhook chega. Erro HTTP fica reservado a falha de comunicação (E-2).
+
+> **Nota de ambiente de teste (2026-08-26):** no sandbox desta conta, o cartão de teste **Mastercard** (5031 4332 1540 6351) é recusado com `invalid_transaction_amount` para qualquer valor; o **Visa** (4235 6477 2802 5682) funciona normalmente. A mensagem é enganosa — a frase completa é "outside the valid range for *available payment methods*", e sem método disponível nenhuma faixa contém o valor. Não confundir com piso de valor real do método.
 
 ---
 
