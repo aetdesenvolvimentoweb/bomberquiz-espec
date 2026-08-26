@@ -90,7 +90,8 @@ No momento em que o cliente verifica o e-mail, sistema cria uma `subscription` d
 - **CA-1:** Após AUTH-RF-002 CA-4 (e-mail verificado), gatilho cria `subscriptions` com `source=trial`, `start_at=now()`, `end_at=now() + 7 dias`, `status=active`. Marca `users.trial_used_at=now()`.
 - **CA-2:** Cliente que recadastra com **novo e-mail** ganha novo trial (nova conta, novo `trial_used_at`). **Mesma conta** não ganha dois trials.
 - **CA-3:** Entrada em `audit_log` opcional (volume alto).
-- **CA-4:** Trial é cancelado se a conta for desativada/excluída antes do término — `subscriptions.status=revoked`.
+- **CA-4:** Trial é cancelado se a conta for **excluída** antes do término — `subscriptions.status=revoked`, junto da anonimização LGPD (PROF-RF-009). **Desativação não revoga** (ajuste feito na implementação, 2026-08-26): desativar é reversível (ADR-0015) e quem reativa a conta volta com o acesso que tinha — inclusive assinatura paga, que seria perdida sem essa distinção. Conta desativada não pratica quiz de qualquer forma.
+- **CA-5** (aditivo de implementação, 2026-08-26): contas criadas **antes** do gatilho existir receberam o trial por migration de dados retroativa (`0020_retroactive_trial.sql`), contado a partir da execução da migration. Sem isso, ligar QUIZ-RF-009 barraria de surpresa toda a base existente. A migration é idempotente (`trial_used_at` é a trava) e ignora contas `deleted`.
 
 ---
 
