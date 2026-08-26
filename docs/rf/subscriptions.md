@@ -194,7 +194,7 @@ Tela "Minha assinatura" do cliente com status atual e próximos passos.
   ```
 - **CA-2:** Quando `access_status=inactive`, payload inclui `cta: "subscribe"` para a UI sugerir checkout.
 - **CA-3:** Quando há cortesia **e** pagamento simultâneos (acumulação ADR-0006), `current_subscription` reflete a com maior `end_at`; `source` mostra a origem dessa.
-- **CA-4:** `refund_eligible_payments` lista pagamentos dentro da janela de 7 dias do CDC (ver SUB-RF-014).
+- **CA-4:** `refund_eligible_payments` lista pagamentos dentro da janela de 7 dias do CDC (ver SUB-RF-014). **Implementado em 2026-08-26** (fatia 4), junto com o `cta` de CA-2. A janela é avaliada pela mesma regra de domínio que valida o reembolso (`Payment.isRefundableAt`) — o botão oferecido é exatamente o que a API aceita. Cada item traz `{ id, plan_name, paid_at, refund_deadline }`.
 
 ---
 
@@ -210,7 +210,10 @@ Lista dos pagamentos passados (sucesso, falha, reembolso) do próprio cliente. A
 - **CA-1:** `GET /me/payments` retorna `{ id, plan_name, method, gross_amount, discount_amount, net_amount, status, paid_at?, refunded_at?, failure_reason?, mp_payment_id, mp_receipt_url? }`, paginado.
 - **CA-2:** Filtros: `status`, intervalo de datas.
 - **CA-3:** Não retorna dados do cartão (apenas últimos 4 dígitos se MP fornecer no webhook — opcional no MVP).
-- **CA-4:** `mp_receipt_url` é o link público do comprovante hospedado pelo Mercado Pago (preenchido a partir do webhook quando `status=paid`). Frontend exibe botão "Ver comprovante".
+- **CA-4:** `mp_receipt_url` é o link público do comprovante hospedado pelo Mercado Pago. Frontend exibe botão "Ver comprovante". **Correção de implementação (2026-08-26), medida contra a API real:**
+  - **Só PIX tem link.** O payload de uma order de **cartão** paga não traz `ticket_url` nem qualquer outro campo de URL/recibo — verificado varrendo o JSON íntegro. Em cartão o campo fica `null` e o botão simplesmente não aparece. Dar recibo a quem paga com cartão exigiria gerar um comprovante próprio, o que SUB-P-05 descartou de propósito.
+  - **É gravado no checkout, não no webhook.** Os campos do meio de pagamento PIX (`ticket_url`, `qr_code`, `qr_code_base64`) só vêm preenchidos na resposta de **criação** da order; uma vez paga, desaparecem. Preencher "a partir do webhook quando `status=paid`", como este CA dizia, resultaria em `mp_receipt_url` sempre nulo.
+- **CA-5** (aditivo de implementação, 2026-08-26): a listagem também devolve `installments`, `created_at`, `refund_deadline` e `refundable` — os dois últimos espelham SUB-RF-005 CA-4 para que a tela de histórico desenhe o botão de reembolso sem cruzar dois endpoints. O filtro `status` aceita vários valores separados por vírgula, mesma convenção de `GET /me/questions`.
 
 ---
 
@@ -406,7 +409,10 @@ Atende ao **direito de arrependimento** previsto no CDC (art. 49) — contratos 
   - `payments.status = paid`; senão → E-2.
   - `now() ≤ paid_at + 7 dias`; senão → E-3 ("Janela de 7 dias expirada — entre em contato com o suporte").
   - Pagamento ainda não foi reembolsado; senão → E-2.
-- **CA-3:** Em sucesso, sistema chama API do Mercado Pago para processar o reembolso (`POST /v1/payments/:id/refunds`). Marca `payments.status=refunded`, `refunded_at=now()`. Webhook posterior do MP (SUB-RF-004 CA-4) confirma e revoga a `subscription` correspondente. Caso a API do MP falhe, o pagamento fica `paid` (não muda local) e retorna HTTP 502 com mensagem orientando contato com suporte.
+- **CA-3:** Em sucesso, sistema chama a API do Mercado Pago para processar o reembolso **total**, marca `payments.status=refunded`, `refunded_at=now()` e **revoga a `subscription` correspondente na mesma transação**. Caso a API do MP falhe, o pagamento fica `paid` (nada muda localmente) e retorna HTTP 502 com mensagem orientando contato com suporte.
+  **Duas correções de implementação (2026-08-26), ambas medidas contra a API real:**
+  - **Endpoint.** Não é `POST /v1/payments/:id/refunds` (API legada): usamos a API de **Orders**, e o id `PAY…` que uma order carrega **não existe** na API legada — ela responde `404 resource not found`. O endpoint correto é **`POST /v1/orders/:id/refund`**, sem corpo (devolução total, que é o que o CDC exige). Responde 201 com a order já em `status: "refunded"`; um segundo pedido responde 409 `order_already_refunded`.
+  - **Quem revoga a assinatura.** A versão anterior deste CA delegava a revogação ao "webhook posterior do MP". **Isso deixaria o cliente reembolsado e ainda com acesso:** a guarda de idempotência do webhook (SUB-RF-004 CA-5) só age sobre pagamento ainda `paid`, então a notificação chegaria depois de já termos gravado `refunded` e não faria nada. A revogação acontece aqui, junto da gravação. O caminho do webhook continua valendo para reembolso iniciado **fora do app** (painel do MP), onde o pagamento ainda está `paid` quando a notificação chega.
 - **CA-4:** Em sucesso, sistema envia e-mail de confirmação ("Reembolso solicitado. O valor de R$X será creditado em até Y dias úteis na forma de pagamento original.").
 - **CA-5:** Entrada em `audit_log` com `action=refund_requested`, `reason?`.
 - **CA-6:** Aplicação do cupom (se houve): cupom **não é restituído** ao cliente — `coupons.used_count` permanece consumido (uma utilização efetiva já ocorreu). Política simples; reavaliar se virar gargalo de marketing.

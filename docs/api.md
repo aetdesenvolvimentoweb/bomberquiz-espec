@@ -146,9 +146,9 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 | PATCH | `/admin/plans/:id` | admin | SUB-RF-001 | Edita plano (`pix_price`/`card_price`/…) |
 | POST | `/me/checkout` | sessão | SUB-RF-003 | Inicia checkout. PIX e **cartão** implementados; saldo MP responde 422. Resposta discriminada por `method`: PIX devolve QR code + `expires_at`; cartão devolve o desfecho da autorização (`order_status`/`payment_status`/`status_detail`) e recebe `card_token`/`payment_method_id`/`device_id`/`installments` do Brick (ADR-0040). Cupom ainda não aceito. |
 | POST | `/webhooks/mercado-pago` | HMAC | SUB-RF-004 | Confirmação de pagamento (idempotente) |
-| GET | `/me/subscription` | sessão | SUB-RF-005 | Status da própria assinatura |
-| GET | `/me/payments` | sessão | SUB-RF-006 | Histórico de pagamentos |
-| POST | `/me/payments/:id/refund` | sessão | SUB-RF-014 | Reembolso (CDC 7 dias) |
+| GET | `/me/subscription` | sessão | SUB-RF-005 | Status da própria assinatura. Inclui `refund_eligible_payments` e, quando `access_status=inactive`, `cta: "subscribe"`. |
+| GET | `/me/payments` | sessão | SUB-RF-006 | Histórico paginado. Filtros `status` (CSV), `created_from`, `created_to`. Cada item traz `refundable`/`refund_deadline` e `mp_receipt_url` (**só PIX** — cartão não tem comprovante no MP). |
+| POST | `/me/payments/:id/refund` | sessão | SUB-RF-014 | Reembolso total (CDC 7 dias), `reason` opcional. 404 para pagamento inexistente **ou** de outro cliente; 409 `payment_not_refundable`/`refund_window_expired`; 502 sem alterar estado local. Revoga a assinatura correspondente. |
 | POST | `/admin/courtesies` | admin | SUB-RF-008 | Concede cortesia |
 | GET | `/admin/courtesies` | admin | SUB-RF-009 | Lista cortesias |
 | POST | `/admin/courtesies/:id/revoke` | admin | SUB-RF-010 | Revoga cortesia (motivo obrigatório) |

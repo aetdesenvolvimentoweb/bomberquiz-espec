@@ -170,7 +170,7 @@ HTTP Request
 **Assinaturas, cortesias e financeiro**
 - `subscription_plans` — id, slug (`monthly`/`quarterly`/`semiannual`/`annual`), name, duration_days, pix_price (centavos), card_price (centavos), max_installments, is_active, created_at, updated_at.
 - `subscriptions` — id, user_id, plan_id?, source (`trial`/`paid`/`courtesy`), courtesy_id?, payment_id?, start_at, end_at, status (`active`/`expired`/`revoked`/`pending_payment`), created_at.
-- `payments` — id, user_id, plan_id, method (`pix`/`mp_balance`/`card`), gross_amount, discount_amount, net_amount (centavos), coupon_id?, installments, mp_payment_id, mp_status, mp_receipt_url?, status (`pending`/`paid`/`failed`/`refunded`), paid_at?, refunded_at?, failure_reason?, created_at, updated_at.
+- `payments` — id, user_id, plan_id, method (`pix`/`mp_balance`/`card`), gross_amount, discount_amount, net_amount (centavos), coupon_id?, installments, mp_payment_id, mp_status, mp_receipt_url?, status (`pending`/`paid`/`failed`/`refunded`), paid_at?, refunded_at?, failure_reason?, created_at, updated_at. _`mp_receipt_url` (2026-08-26) é gravado no **checkout**, não no webhook, e existe **só em PIX** (`ticket_url`): a API de Orders não devolve link de comprovante para cartão, e os campos do PIX somem do payload depois do pagamento — ver SUB-RF-006 CA-4._
 - `subscription_reminders` — id, user_id, milestone (`d7`/`d3`/`d1`/`d0`), target_end_at, sent_at. Único em (user_id, milestone, target_end_at) — é o índice que dá idempotência ao job de SUB-RF-007 e faz a renovação resetar os marcos sozinha.
 - `courtesies` — id, beneficiary_user_id, granted_by_admin_id, days_granted, start_at, end_at, category (`parceria`/`demonstracao`), notes?, revoked_at?, revoked_by_admin_id?, revocation_reason?, created_at.
 - `coupons` — id, code (unique, case-insensitive), discount_type (`percent`/`fixed_cents`), discount_value, valid_from?, valid_until?, max_uses?, used_count, is_active, applies_to_plan_slugs?, created_by_admin_id, created_at.
@@ -301,12 +301,12 @@ Todos enviados via **Resend** (ADR-0012), templates em **React Email**, links co
 | Senha alterada (alerta) | Reset ou troca logado | AUTH-RF-007, PROF-RF-003 | Inclui timestamp + IP |
 | E-mail de acesso alterado (alerta) | Troca de e-mail confirmada | PROF-RF-004 | Enviado ao **endereço antigo** |
 | Conta excluída (confirmação) | Exclusão LGPD | PROF-RF-009 | Ao **endereço original**, antes do commit |
-| Pagamento confirmado | Webhook MP `approved` | SUB-RF-004 | Plano, novo `end_at`, link do comprovante MP |
+| Pagamento confirmado | Webhook MP `processed` | SUB-RF-004 | Plano, novo `end_at`, link do comprovante MP (só PIX) |
 | Lembrete de expiração | Job 09:00, D-7/D-3/D-1 | SUB-RF-007 | Um por marco; link de checkout |
 | Assinatura expirada (final) | Job 09:00, D-0 | SUB-RF-007 | Único, sem insistência posterior |
 | Cortesia concedida | Admin concede | SUB-RF-008 | "Você recebeu N dias…" |
 | Cortesia revogada | Admin revoga | SUB-RF-010 | Inclui motivo |
-| Reembolso solicitado | Cliente pede reembolso | SUB-RF-014 | Valor + prazo de crédito |
+| Reembolso solicitado | Cliente pede reembolso | SUB-RF-014 | ✅ implementado (2026-08-26). Valor + prazo de crédito (10 dias úteis) + aviso de que o acesso foi encerrado |
 | Pergunta aprovada | Admin aprova | CONT-RF-015 | "aprovada com alterações" se houve edição |
 | Pergunta precisa de ajustes | Admin rejeita | CONT-RF-016 | Motivo na íntegra + link de reedição |
 
