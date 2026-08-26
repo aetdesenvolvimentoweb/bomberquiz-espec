@@ -145,7 +145,13 @@ Endpoint que recebe notificações do Mercado Pago e atualiza estado interno de 
 - **CA-7:** Em sucesso de pagamento, sistema **envia e-mail ao cliente** confirmando pagamento, plano, novo `end_at` e link para o comprovante MP (`mp_receipt_url`).
 
 **Erros previstos:**
-- **E-1:** Assinatura HMAC inválida → HTTP 401, log de diagnóstico (sem vazar segredo). Causa mais comum: `MP_WEBHOOK_SECRET` copiado do modo errado do painel do MP (teste × produtivo — cada modo tem segredo próprio).
+- **E-1:** Assinatura HMAC inválida → HTTP 401, log de diagnóstico (sem vazar segredo). O log traz o **manifest exato**, o HMAC esperado por **fingerprint** de cada segredo configurado (`sha256` truncado — identifica o segredo sem revelá-lo) e `live_mode`/`application_id`/`user_id` do corpo. Causas, em ordem de frequência observada:
+  1. **Valor de `MP_WEBHOOK_SECRET` divergente do painel** — copiado truncado/com espaço, ou regenerado no painel depois da cópia. Sintoma: fingerprint do log ≠ fingerprint do segredo do painel.
+  2. **Processo com `.env` obsoleto** — `bun --watch` recarrega módulos importados, **não** o `.env`; trocar o segredo exige reiniciar `bun run dev`. Sintoma: fingerprint do log ≠ o esperado embora o arquivo já esteja correto.
+  3. **Notificação emitida pela aplicação do USUÁRIO DE TESTE** (causa confirmada dos 401 em dev, 2026-08-18). O `application_id` do log identifica quem emitiu a notificação. Nesta conta: a aplicação BomberQuiz é **`1098861728853745`** (User ID `77654682`), mas as orders criadas com o Access Token de *Credenciais de teste* saem como **`4997377397405635`** (User ID `3422204690`) — que é a aplicação existente **dentro da conta do usuário de teste** (`TESTUSER…`, listado no painel em *Credenciais de teste → Dados das credenciais de teste*), não a BomberQuiz em modo teste. Essas notificações são assinadas com o segredo **daquela** aplicação; nenhum segredo da tela de Webhooks da BomberQuiz as valida. O simulador do painel, assinado pela própria BomberQuiz, responde 200 e **não prova nada** sobre o tráfego real.
+  4. Segredo do modo errado do painel (teste × produtivo), **quando** a aplicação tiver segredos distintos por modo — nem toda conta tem.
+
+  Diagnóstico: `bun run mp:webhook-replay --log <arquivo>` (ou `--file <jsonl>`) recalcula o HMAC das notificações já recebidas contra os segredos candidatos (`--secret` aceita um valor avulso do painel, sem tocar no `.env`) e diz se o defeito é do manifest ou do segredo. `MP_WEBHOOK_SECRET` aceita **vários segredos separados por vírgula**, para rotação sem janela de 401.
 - **E-2:** `payments` não encontrado → HTTP 200 com `ignored: "unknown_payment"` e log para investigação (ver CA-8 — respondia 404 até 2026-08-18, o que violava o contrato de entrega do MP e fazia o simulador do painel reportar falha).
 
 ---
