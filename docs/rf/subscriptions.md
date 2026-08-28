@@ -368,6 +368,18 @@ Visão consolidada de receitas, cortesias e métricas-chave do negócio.
 **Erros previstos:**
 - **E-1:** Acesso de não-admin → HTTP 403.
 
+### Aditivos de implementação (2026-08-28)
+
+O payload de CA-1 foi escrito antes de existir código de assinaturas. Ao implementar, três ajustes:
+
+**Saíram do contrato — não existem no sistema.** `courtesies`, `discounts_applied_cents` e `users.active_courtesy` dependem das tabelas `courtesies` e `coupons`, que nunca foram criadas (SUB-RF-008/013 seguem fora do MVP). Devolver zeros seria pior que omitir: o admin leria "nenhuma cortesia concedida" onde a verdade é "o sistema não tem cortesias". Voltam junto com as tabelas. `mrr_proxy_cents` e `lapsed_last_30d` também saíram — números derivados que exigiriam definição própria e não foram pedidos.
+
+**Entraram — taxa e líquido reais.** `fee_cents`, `received_cents` e `fee_unknown_count`. A spec original não os previa porque, quando foi escrita, não se sabia se o Mercado Pago os expunha; uma sondagem contra a conta de produção mostrou que sim, por um caminho não óbvio (ADR-0041). `fee_unknown_count` é a contagem de pagamentos do período ainda sem taxa conhecida: enquanto for maior que zero, taxa e líquido estão **incompletos**, e a UI diz isso — um líquido inflado com cara de número fechado é o pior defeito possível num painel financeiro.
+
+**CA-4 cumprido, não contrariado.** O CA-4 diz que este endpoint não detalha transações individuais, remetendo a "endpoint separado de pagamentos (futuro)". Esse endpoint é `GET /admin/payments`, entregue nesta mesma fatia: um total sem as linhas que o compõem não dá para conferir nem para responder a um cliente que ligou perguntando da compra dele.
+
+**Como o período é contado (CA-2).** Cada linha aparece na data do **evento**: receita pela data do pagamento, estorno pela data do estorno. Uma compra de janeiro estornada em fevereiro é receita de janeiro e estorno de fevereiro — é assim que o extrato do MP conta, e o painel só serve para conferir contra ele. Consequência que é fácil errar: a receita inclui pagamentos com status `refunded`, não só `paid`; filtrar por `paid` faria uma compra paga e estornada no mesmo mês sumir da receita e ainda assim aparecer nos estornos, fechando o mês negativo do nada.
+
 ---
 
 ## SUB-RF-013 — Gerenciar cupons de desconto (admin)
