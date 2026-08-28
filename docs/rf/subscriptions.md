@@ -67,6 +67,12 @@ Admin gerencia os planos vendidos. Qualquer usuário lê a lista de planos ativo
 **Critérios de aceitação:**
 - **CA-1:** `GET /plans` é **público (sem sessão)** — um visitante não cadastrado consegue ver preços antes de criar conta (página de preços / decisão de compra). Retorna planos com `is_active=true`: `{ slug, name, duration_days, pix_price, card_price, max_installments }`. Preços em centavos para evitar float; cliente formata. Não expõe nenhum dado sensível; sujeito ao rate limit global por IP (60 req/min).
 - **CA-2:** `PATCH /admin/plans/:id` (admin) altera `pix_price`, `card_price`, `is_active`, `max_installments`. Validação: `card_price ≥ pix_price`. UI sugere `card_price = round(pix_price × 1.10)` mas permite override.
+  **Aditivos de implementação (2026-08-28):**
+  - **`GET /admin/plans` acompanha o PATCH.** `GET /plans` (CA-1) só devolve ativos, então um plano desativado sumiria também da tela do admin — e não haveria como religá-lo pela UI. A rota do admin devolve o catálogo completo, com `id` (o PATCH endereça por id) e `is_active`.
+  - **A validação `card_price ≥ pix_price` é avaliada sobre o resultado, não sobre o corpo do request.** Num PATCH parcial que manda só `pix_price` acima do `card_price` já gravado, comparar apenas os campos recebidos deixaria a inversão passar.
+  - **Piso de 100 centavos** em ambos os preços: o Mercado Pago recusa cobrança abaixo de R$1,00 (mesmo piso que CA-3 de SUB-RF-015 aplica ao desconto). Sem ele, um preço de R$0,50 só falharia no checkout do cliente.
+  - **`slug`, `name` e `duration_days` não são editáveis**, mesmo estando na tabela. Mudar a duração faria assinaturas já vendidas passarem a significar outro período, e o `slug` é a chave que o checkout usa.
+  - **`GET /plans` passou a ordenar por `duration_days`.** Não ordenava, e o Postgres devolvia na ordem física das linhas — que um `UPDATE` altera. O primeiro reajuste feito pela UI jogou o plano mensal para o fim do catálogo público, embaralhando a tela do cliente. Defeito latente desde a fatia 2, revelado só quando passou a existir um caminho de escrita.
 - **CA-3:** Os 4 slugs (`monthly`/`quarterly`/`semiannual`/`annual`) são **semeados** na primeira migração com preços de placeholder; admin ajusta antes do lançamento.
 - **CA-4:** Plano não pode ser **excluído** — apenas desativado (`is_active=false`). Mantém integridade com assinaturas históricas.
 - **CA-5:** Entrada em `audit_log` ao editar plano (com diff).

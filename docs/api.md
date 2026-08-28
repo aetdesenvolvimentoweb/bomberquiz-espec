@@ -142,8 +142,9 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 
 | Método | Rota | Acesso | RF | Descrição |
 |---|---|---|---|---|
-| GET | `/plans` | público | SUB-RF-001 | Lista planos ativos (preços pré-cadastro) |
-| PATCH | `/admin/plans/:id` | admin | SUB-RF-001 | Edita plano (`pix_price`/`card_price`/…) |
+| GET | `/plans` | público | SUB-RF-001 | Lista planos ativos (preços pré-cadastro), ordenados por `duration_days` |
+| GET | `/admin/plans` | admin | SUB-RF-001 | Catálogo completo, **inclui desativados** (o público não). Traz `id` e `is_active`. Sem paginação — são 4 planos fixos. |
+| PATCH | `/admin/plans/:id` | admin | SUB-RF-001 | Edita `pix_price`, `card_price`, `max_installments`, `is_active` — e **só** esses (slug/nome/duração são imutáveis). 404 `plan_not_found`; 422 `card_price_below_pix_price` e para preço abaixo de 100 centavos (piso do MP). Grava `audit_log` com `changes` **e** `previous`. Não retroage: compras feitas e cobranças PIX pendentes mantêm o valor da época. |
 | POST | `/me/checkout` | sessão | SUB-RF-003 | Inicia checkout. PIX e **cartão** implementados; saldo MP responde 422. Resposta discriminada por `method`: PIX devolve QR code + `expires_at`; cartão devolve o desfecho da autorização (`order_status`/`payment_status`/`status_detail`) e recebe `card_token`/`payment_method_id`/`device_id`/`installments` do Brick (ADR-0040). Cupom ainda não aceito. |
 | POST | `/webhooks/mercado-pago` | HMAC | SUB-RF-004 | Confirmação de pagamento (idempotente) |
 | GET | `/me/subscription` | sessão | SUB-RF-005 | Status da própria assinatura. Inclui `refund_eligible_payments` e, quando `access_status=inactive`, `cta: "subscribe"`. |
