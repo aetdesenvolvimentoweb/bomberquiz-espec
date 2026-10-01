@@ -22,8 +22,9 @@
 | Cronômetro | opcional, **tempo total**. Padrão = 3 minutos × nº de questões. Ajustável pelo cliente entre 1–5 min/questão |
 | Modo de exibição da justificativa | `after_each` ou `at_end` (escolha do cliente ao iniciar o quiz) |
 | Mínimo de questões publicadas para iniciar quiz | 5 (modos livres); para simulado TAP, ao menos 1 questão em cada eixo com `tap_weight > 0` |
-| Cooldown / não-repetição de questões | **sem** cooldown no MVP — sorteio uniforme entre `status=published` |
-| Filtro por nível de dificuldade no sorteio | **não** disponível no MVP |
+| Cooldown / não-repetição de questões | **sem** cooldown no MVP — sorteio entre `status=published` |
+| Mistura de níveis de dificuldade no sorteio | **sempre**, como numa prova real: 10% muito fácil / 20% fácil / 40% médio / 20% difícil / 10% muito difícil (CONT-RF-017). Nível sem estoque é completado pelo nível mais próximo disponível. Ver QUIZ-RF-001 CA-3 e ADR-0046 |
+| Filtro por nível de dificuldade escolhido pelo cliente | **não** disponível no MVP (QUIZ-P-05) |
 | Limite de quizzes simultâneos por cliente | 1 (qualquer iniciar enquanto há um `in_progress` encerra o anterior como `abandoned`) |
 | Retenção de quizzes finalizados | sem auto-expiração — ficam no histórico do cliente indefinidamente |
 
@@ -68,6 +69,11 @@ Cliente define modo, escopo e preferências; sistema sorteia as questões e abre
   - `tap_simulation`: para cada eixo com `tap_weight > 0`, sorteia exatamente `tap_weight` questões dentre as questões `published` de todas as matérias ativas daquele eixo (distribuição entre as matérias do eixo é uniforme, já que a matéria não carrega peso próprio). Total = soma dos pesos dos eixos. Ordem das questões é aleatorizada após o sorteio (não agrupa por eixo/matéria).
   - `free_subject`: sorteia `size` questões da matéria escolhida.
   - `free_axis`: sorteia `size` questões distribuídas uniformemente entre as matérias ativas do eixo.
+  - **Mistura de níveis (ADR-0046):** em todos os modos, o sorteio segue a curva 10/20/40/20/10 de `very_easy`/`easy`/`medium`/`hard`/`very_hard` (nível de CONT-RF-017):
+    - A quantidade por nível sai do tamanho do quiz por maiores restos, com desempate aleatório. Quizzes de 10/20/30/50 questões batem exato (10 → 1/2/4/2/1).
+    - No `tap_simulation`, a mistura é calculada para a prova inteira e fatiada aleatoriamente entre os eixos, e cada eixo continua com exatamente `tap_weight` questões.
+    - Se faltar pergunta de algum nível no pool, a vaga é completada pelo nível mais próximo que tiver estoque (falta de "muito difícil" vira "difícil" antes de "médio"). O quiz nunca deixa de ser montado por causa da mistura; as validações de mínimo continuam as do CA-2.
+    - Enquanto as perguntas forem todas `medium` (recém-criadas), o sorteio equivale ao uniforme.
   - Em todos os modos, ordem das **alternativas** de cada questão é aleatorizada por sessão (4 permutações) para evitar memorização posicional.
 - **CA-4:** Resposta HTTP 201 com:
   ```json
@@ -339,4 +345,4 @@ Mostra a evolução do desempenho do próprio cliente **ao longo do tempo** (agr
 
 - **QUIZ-P-01 — Modo offline.** Quiz totalmente offline com sincronização. Exige resolução de conflitos de stats (ver `submit-answer.usecase.ts` — validação de tempo limite usa relógio do servidor, sem timestamp do cliente) e mudança de contrato da API; reavaliar após observação do uso real do PWA. Instrumentação para essa observação já existe (2026-08-03): tabela `pwa_events`, evento `quiz_offline_period` com `duration_ms` por sessão — ver `docs/arquitetura.md` § Observabilidade e `tarefas.md`.
 - **QUIZ-P-04 — Modo "pontos fracos".** Sistema sorteia das matérias com menor acurácia do cliente. Requer volume mínimo de histórico para ser útil (≥ 10 respostas/matéria); reavaliar quando base de usuários gerar volume.
-- **QUIZ-P-05 — Filtro por nível de dificuldade no sorteio.** "Só hards" / "só easies". Sorteio uniforme em `published` é suficiente no MVP; reavaliar quando volume de questões por dificuldade tornar o filtro útil.
+- **QUIZ-P-05 — Filtro por nível de dificuldade escolhido pelo cliente.** "Só hards" / "só easies". Desde 2026-10-01 todo quiz já sai com a mistura de níveis de uma prova real (QUIZ-RF-001 CA-3, ADR-0046); o filtro opcional segue adiado até haver volume de questões por nível que o torne útil.

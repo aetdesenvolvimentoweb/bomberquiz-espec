@@ -720,6 +720,17 @@
     - Os demais arquivos de integração que travam são os do problema conhecido do Windows/Bun com `.rejects`; `create-axis` trava igual sem estas mudanças.
     - `web`: typecheck sem erros novos. O único erro é `@mercadopago/sdk-react`, que não está instalado no `node_modules` local.
   - **Próximo passo (bot):** `PublishedQuestion` ganha `difficultyLevel` na etapa de perguntas mais difíceis, com o critério "mesmo conteúdo + mesmo nível = duplicata".
+- [x] 2026-10-01 — **Sorteio do quiz com mistura de níveis de dificuldade** (`api`, QUIZ-RF-001 CA-3, ADR-0046).
+  - **Achado:** o sorteio era uniforme e ignorava o nível recém-implementado (CONT-RF-017).
+  - **Regra:**
+    - Todo quiz (livre por matéria, livre por eixo e simulado TAP) segue a curva 10/20/40/20/10 de Muito fácil … Muito difícil.
+    - Um nível em falta é completado pelo nível mais próximo com estoque.
+    - No TAP, a curva vale para a prova inteira, e o `tap_weight` de cada eixo continua exato.
+  - **API:** `difficultySlots` + `pickByDifficulty` em `domain/quiz/draw.ts`; `StartQuizUseCase` passou a usá-las nos três modos.
+  - **Testes:**
+    - unit **288** (9 novos em `draw.test.ts`);
+    - e2e **211/211**;
+    - integração nova `start-quiz-difficulty-mix` **2/2**, em arquivo próprio porque o `start-quiz.usecase.test.ts` usa `.rejects` e trava no Windows local.
 
 ## Backlog (sem prioridade definida)
 

@@ -406,3 +406,18 @@ A ponte entre os dois mundos é o `external_reference` — gravamos nele o id da
 - O enum da API mudou (`unrated` deixou de existir), e `web` foi atualizado junto.
 - As faixas e o peso 10 são um ponto de partida e devem ser revistos quando houver volume real de respostas.
 
+## 0046 — Sorteio do quiz com mistura de níveis de dificuldade (2026-10-01)
+
+**Contexto:** com o nível por pergunta ativo (ADR-0045), o sorteio do quiz continuava uniforme em `published` (QUIZ-RF-001 CA-3), e um quiz podia sair só com perguntas fáceis ou só com difíceis. O usuário pediu que todo quiz tenha questões de todos os níveis, como num concurso real, e que um nível em falta seja completado com as perguntas existentes.
+
+**Decisão:**
+1. **Curva fixa 10/20/40/20/10** (`very_easy`/`easy`/`medium`/`hard`/`very_hard`), centrada em médio e simétrica, como a distribuição típica de uma prova. Fica como constante única em `domain/quiz/draw.ts` (`DIFFICULTY_MIX_PERCENT`), em percentuais inteiros para não ter erro de ponto flutuante no arredondamento.
+2. **Quantidade por nível por maiores restos com desempate aleatório:** os tamanhos 10/20/30/50 batem exato. Em tamanhos que não dividem, as sobras não caem sempre no mesmo nível.
+3. **Simulado TAP:** a mistura é calculada para a prova inteira e fatiada entre os eixos, em vez de por eixo. Com eixos de peso pequeno, arredondar por eixo distorceria o total (um eixo de 2 questões nunca teria "muito difícil"). O `tap_weight` de cada eixo continua exato.
+4. **Falta de estoque:** primeiro, cada vaga é atendida pelo próprio nível. As que sobram vão para o nível **mais próximo** com estoque (empate sorteado), e só então para os mais distantes. A forma da curva se preserva o máximo possível, e o quiz nunca falha por causa da mistura.
+
+**Consequências:**
+- Enquanto quase tudo for `medium` (base nova), o sorteio equivale ao uniforme. A mistura aparece sozinha conforme o recálculo diário move as perguntas.
+- No TAP, o fatiamento não olha o estoque de cada eixo. Um eixo sem perguntas difíceis completa a sua fatia com o vizinho mais próximo, mesmo que outro eixo tivesse difíceis sobrando. Esse desvio é aceitável e simplifica o algoritmo.
+- O filtro opcional do cliente ("só difíceis", QUIZ-P-05) continua adiado.
+- A curva é um ponto de partida; pode ser ajustada quando houver volume real por nível.
