@@ -159,8 +159,7 @@ HTTP Request
 **Conteúdo (Eixo → Matéria → Pergunta)**
 - `axes` — id, name (unique, case-insensitive), description?, tap_weight (int ≥ 0 — nº de questões do eixo na prova real, conforme edital vigente), status (`active`/`archived`), created_at, archived_at?.
 - `subjects` — id, axis_id (FK), name (unique no eixo), official_source?, status, created_at, archived_at?.
-- `questions` — id, subject_id (FK), statement, alternatives (4 strings), correct_index (0..3), explanation, source_reference?, image_url?, status (`draft`/`pending_review`/`published`/`archived`), author_id (FK users), reviewed_by?, reviewed_at?, rejection_reason?, difficulty_level (`unrated`/`easy`/`medium`/`hard`), difficulty_recomputed_at?, stats_reset_at?, created_at, updated_at, published_at?, archived_at?.
-- `question_stats` — question_id (PK/FK), total_answers, correct_count, last_updated. _Base do `accuracy` e do job de dificuldade (CONT-RF-017)._
+- `questions` — id, subject_id (FK), statement, alternatives (4 strings), correct_index (0..3), explanation, source_reference?, image_url?, status (`draft`/`pending_review`/`published`/`archived`), author_id (FK users), reviewed_by?, reviewed_at?, rejection_reason?, total_answers, correct_answers, difficulty_level (`very_easy`/`easy`/`medium`/`hard`/`very_hard`, default `medium`), difficulty_recomputed_at?, stats_reset_at?, created_at, updated_at, published_at?, archived_at?. _Os contadores são denormalizados e recalculados pelo job de dificuldade (CONT-RF-017) a partir de `quiz_session_questions`; não há tabela `question_stats` separada (ADR-0045)._
 
 **Quiz e desempenho**
 - `quiz_sessions` — id, user_id, mode (`tap_simulation`/`free_subject`/`free_axis`), scope_id?, total_questions, timer_enabled, time_limit_seconds?, explanation_mode (`after_each`/`at_end`), status (`in_progress`/`finished`/`expired`/`abandoned`), correct_count, answered_count, started_at, finished_at?.
@@ -270,7 +269,7 @@ Scheduler **in-process** no backend (ADR-0017). Cada job é um caso de uso em `a
 
 | Job | Cadência | RF | Comportamento |
 |---|---|---|---|
-| Recalcular dificuldade das perguntas | diário 00:00 | CONT-RF-017 | Reclassifica `published` em `unrated`/`easy`/`medium`/`hard`. |
+| Recalcular dificuldade das perguntas | diário 00:00 | CONT-RF-017 | ✅ implementado (2026-10-01). Recalcula contadores e nível de toda `published` (`very_easy`…`very_hard`) do zero, numa transação. Cron em `QUESTION_DIFFICULTY_JOB_CRON`; disparo manual com `bun run recompute:question-difficulty`. |
 | Lembretes de expiração de assinatura | diário 09:00 | SUB-RF-007 | ✅ implementado (2026-08-26). E-mails D-7/D-3/D-1 e e-mail final D-0; um por marco. **Também fecha as assinaturas vencidas** (`active` → `expired`), transição que nenhuma outra parte do sistema fazia. Idempotência via `subscription_reminders`, chaveada por (usuário, marco, `end_at` alvo) — não por `subscription_id`, que duplicaria e-mail para quem acumulou dias em duas compras. |
 | Expiração e auto-abandono de quiz | a cada 5 min | QUIZ-RF-004 | `expired` por cronômetro; `abandoned` após 24h sem atividade. |
 | Purga de sessões inativas | diário (ex. 03:00) | AUTH-RF-008 | Remove sessões com >7 dias sem uso. |

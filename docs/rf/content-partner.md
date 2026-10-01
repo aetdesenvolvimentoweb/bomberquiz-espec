@@ -197,7 +197,7 @@ Tela inicial do parceiro com agregados motivacionais e operacionais: quantas per
   - `counts`: `{ draft, pending_review, published, archived }`.
   - `engagement`: `{ total_answers_received, avg_accuracy }` — somando as próprias `published`.
   - `by_subject`: array `[{ subject_id, subject_name, count_published, total_answers, avg_accuracy }]`.
-  - `by_difficulty`: `{ easy, medium, hard, unrated }` — contagem de publicadas por banda (alimentada por CONT-RF-017).
+  - `by_difficulty`: `{ very_easy, easy, medium, hard, very_hard }` — contagem de publicadas por nível (alimentada por CONT-RF-017).
   - `last_published`: `[{ id, statement_preview, published_at }]` — últimas 5.
   - `last_rejected`: `[{ id, statement_preview, rejection_reason, rejected_at }]` — últimas 5 (para o parceiro priorizar correções).
   - `unread_review_events`: inteiro — quantidade de eventos de aprovação/rejeição que o parceiro **ainda não consultou** via PART-RF-007. Alimenta o badge global no app. Decrementa quando o parceiro abre o histórico da pergunta (PART-RF-007 CA-4).

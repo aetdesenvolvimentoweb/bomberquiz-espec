@@ -696,6 +696,30 @@
     - Código em `bot/api/src/lib/duplicates/`.
     - Testes: bot **56**.
   - **Achado:** o nível de dificuldade por pergunta em produção (CONT-RF-017) não existe no código. Não há coluna, `total_answers`/`accuracy` estão fixos em 0 e o dashboard do parceiro mostra tudo como "não classificada". O único classificador baseado em respostas é o selo por aluno/matéria (fraco/médio/forte). Isso precisa ser considerado na próxima etapa (dificuldade).
+- [x] 2026-10-01 — **Nível de dificuldade por pergunta (CONT-RF-017), revisado e implementado** (`api` + `web`, ADR-0045). Fecha o achado acima.
+  - **Regra nova:**
+    - 5 níveis (Muito fácil … Muito difícil).
+    - Média suavizada (10 respostas virtuais a 57,5%) no lugar do corte de 30 respostas.
+    - Pergunta nova e sem respostas é **Médio**.
+    - Só contam as respostas efetivas: as em branco de quiz finalizado ou expirado ficam de fora.
+  - **API:**
+    - Migration `0024_question_difficulty`: enum `question_difficulty` + `total_answers`, `correct_answers`, `difficulty_level` (default `medium`) e `difficulty_recomputed_at` em `questions`.
+    - Job `question-difficulty` (`QUESTION_DIFFICULTY_JOB_CRON`, default 00:00) → `RecomputeQuestionDifficultyUseCase`, que recalcula do zero numa transação.
+    - Os zeros fixos de `total_answers`/`accuracy`/`difficulty_level` saíram das listagens e detalhes do admin e do parceiro.
+    - O dashboard do parceiro passou a ter `by_difficulty` com 5 níveis e engajamento/por matéria reais.
+    - `sort=accuracy` do parceiro passou a funcionar.
+    - `GET /admin/questions/published` devolve `difficulty_level`.
+    - Reset de estatísticas zera contadores e nível na hora.
+  - **Web:**
+    - Coluna "Nível" nas listagens de perguntas do admin e do parceiro (só publicadas; o tooltip mostra respostas e % de acerto).
+    - Seção de níveis no dashboard do parceiro.
+    - `schema.d.ts` regenerado.
+  - **Após o deploy:** rodar uma vez `fly ssh console -a bomberquiz-api -C "/bin/sh -c 'cd /app && bun run scripts/recompute-question-difficulty.ts'"` para não esperar a virada das 00:00. Até lá, todas aparecem como Médio.
+  - **Testes:**
+    - API: unit **279** (6 novos); e2e **211/211**; integração do recálculo **3/3**, mais `question.repository` (17) e `get-partner-dashboard` (2).
+    - Os demais arquivos de integração que travam são os do problema conhecido do Windows/Bun com `.rejects`; `create-axis` trava igual sem estas mudanças.
+    - `web`: typecheck sem erros novos. O único erro é `@mercadopago/sdk-react`, que não está instalado no `node_modules` local.
+  - **Próximo passo (bot):** `PublishedQuestion` ganha `difficultyLevel` na etapa de perguntas mais difíceis, com o critério "mesmo conteúdo + mesmo nível = duplicata".
 
 ## Backlog (sem prioridade definida)
 
@@ -705,7 +729,7 @@
 - [ ] **Notificar falha dos workflows do GitHub Actions** (`bomberquiz-api` e `bomberquiz-web`) — hoje um deploy que falha no CI não avisa ninguém; só se descobre entrando no Actions. Custou uma investigação inteira em 2026-08-28 (ver entrada acima): o deploy da API estava quebrado desde 26/08 por um teste instável, e o sintoma apareceu dois dias depois disfarçado de bug de frontend (404 em `/me/payments`). Opções: e-mail nativo do GitHub para workflows que falham em `main` (mais simples, só configuração de conta), ou um step `if: failure()` mandando para algum canal. **Só o alerta importa aqui — o CI em si está correto, ele barrou o deploy exatamente como deveria.**
 
 - [ ] **Módulo 3 (Conteúdo Admin) — concluído nesta rodada** (Eixos, Matérias, Perguntas+imagem, Fila de revisão — ver "Realizadas"). Pendências residuais específicas: badge `unread_review_events` do parceiro e link direto no e-mail de aprovação/rejeição (ambos dependem do Módulo 4 existir — ver entrada de 2026-07-20 acima).
-- [x] ~~CONT-RF-017 (job de dificuldade) + scheduler in-process~~ — scheduler in-process implementado na Slice 2 do Módulo 5 (ver entrada de 2026-07-23 acima), mas só para o job de expiração de quiz; CONT-RF-017 em si continua adiado até haver dado real de resposta para validar o cálculo de dificuldade. **Lembretes SUB-RF-007 implementados em 2026-08-26** sobre a mesma infra, sem alterá-la. Restam 2 jobs previstos: purga de sessões (AUTH-RF-008) e dump de backup (ADR-0020).
+- [x] ~~CONT-RF-017 (job de dificuldade) + scheduler in-process~~ — scheduler in-process implementado na Slice 2 do Módulo 5 (ver entrada de 2026-07-23 acima); **CONT-RF-017 implementado em 2026-10-01** com regra revisada (ADR-0045). **Lembretes SUB-RF-007 implementados em 2026-08-26** sobre a mesma infra, sem alterá-la. Restam 2 jobs previstos: purga de sessões (AUTH-RF-008) e dump de backup (ADR-0020).
 - [ ] **Investigar a causa raiz do hang de `beforeEach`/`afterEach` em testes de integração no Windows/Bun** (ver entrada de 2026-07-22 acima) — agora sabemos que correlaciona com testes que esperam rejeição (`.rejects`), não com arquivos específicos; ainda não sabemos o porquê. Confirmado na Slice 2 (2026-07-23) que não reproduz em ambiente Linux (suíte completa verde sem isolar arquivos). `test:unit` e `test:e2e` continuam confiáveis e são o caminho primário de verificação enquanto isso não for resolvido no Windows.
 - [x] ~~Módulo 5 — Slice 6 (frontend histórico/desempenho/reset)~~ — concluída em 2026-07-24 (ver entrada acima). **Módulo 5 (Quiz) 100% completo**, incluindo QUIZ-RF-009 desde 2026-08-26 (abaixo).
 - [x] ~~**QUIZ-RF-009 (bloqueio de acesso por assinatura)**~~ — implementado em 2026-08-26 na fatia 1 do ciclo do Módulo 6 (ver entrada acima), exatamente como previsto aqui: `requireActiveAccess` só em `POST /quizzes` e `POST /quizzes/:id/answers`. **Módulo 5 (Quiz) fica 100% completo.**

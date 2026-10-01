@@ -387,4 +387,22 @@ A ponte entre os dois mundos é o `external_reference` — gravamos nele o id da
 - O custo extra por geração é uma chamada curta à IA, só quando há candidatas.
 - A triagem lexical tem limite conhecido: uma paráfrase sem nenhum termo em comum não vira candidata e escapa. Na prática, perguntas sobre o mesmo dispositivo compartilham termos técnicos ("jaguatirica", "puçá", "círculo de ação"). Se isso falhar em uso real, o próximo passo é trocar a triagem por embeddings.
 - **Dificuldade:** no critério combinado, mesmo conteúdo com o mesmo nível é duplicata, e o mesmo conteúdo em nível mais alto é permitido. Isso fica para a etapa de dificuldade, quando a IA passar a rotular o nível das perguntas geradas.
-- O nível por pergunta em produção (CONT-RF-017) ainda **não está implementado**: não há coluna, e `total_answers`/`accuracy` estão fixos em 0. Por isso o endpoint não devolve nível.
+- O nível por pergunta em produção (CONT-RF-017) ainda **não estava implementado** nesta data. Foi implementado no mesmo dia (ADR-0045), e o endpoint passou a devolver `difficulty_level`.
+
+## 0045 — Nível de dificuldade por pergunta: 5 níveis, média suavizada e contadores denormalizados (2026-10-01)
+
+**Contexto:** CONT-RF-017 previa um job diário com 3 faixas (`easy`/`medium`/`hard`) e `unrated` abaixo de 30 respostas, mas nunca foi implementado: `total_answers`/`accuracy` estavam fixos em 0 e o painel do parceiro mostrava tudo "Sem avaliação". Com a base atual de alunos, um corte de 30 respostas deixaria quase todas as perguntas sem nível por muito tempo. O usuário propôs que pergunta nova nasça `medium` (o rebalanceamento pelas respostas é automático) e perguntou sobre separar os extremos em "muito fácil" e "muito difícil". O nível também vai alimentar a próxima etapa do `ai-bot` (gerar perguntas mais difíceis e o critério de duplicata "mesmo conteúdo + mesmo nível", ADR-0044).
+
+**Decisão:**
+1. **5 níveis:** `very_easy` / `easy` / `medium` / `hard` / `very_hard`.
+2. **Média suavizada no lugar do mínimo de respostas:** `p = (acertos + 10 × 0,575) / (respostas + 10)`, classificada em ≥ 85% / 70–85% / 45–70% / 30–45% / < 30%. Sem respostas dá `medium` (a proposta do usuário). Com poucas, a pergunta se move devagar: 3 acertos em 3 ainda é `medium`, 10 em 10 é `easy`, 40 em 40 é `very_easy`. Com muitas, a taxa real domina. Um corte rígido em N respostas faria a pergunta saltar de "sem nível" para um extremo de uma vez. As constantes ficam num único arquivo de domínio (`question-difficulty.ts`).
+3. **Só respostas efetivas contam:** questões deixadas em branco viram `is_correct=false` ao finalizar ou expirar o quiz, o que é correto para o desempenho do aluno, mas inflaria a dificuldade de perguntas que o aluno nem leu.
+4. **Contadores denormalizados em `questions`** (`total_answers`, `correct_answers`), sem a tabela `question_stats` prevista em `arquitetura.md`. As listagens já carregam a pergunta, então não precisam de join. O job recalcula tudo do zero a partir de `quiz_session_questions` (idempotente e auto-corretivo), com um `UPDATE … FROM (VALUES …)` em lotes de 500 numa transação.
+5. `accuracy` exibida é a taxa **real**; a suavizada é só critério de classificação.
+
+**Consequências:**
+- Os números exibidos ficam até 24 h defasados. Atualização incremental a cada resposta foi descartada por exigir sincronizar o reset de estatísticas e por não haver necessidade de tempo real.
+- O reset de estatísticas zera contadores e nível na hora.
+- O enum da API mudou (`unrated` deixou de existir), e `web` foi atualizado junto.
+- As faixas e o peso 10 são um ponto de partida e devem ser revistos quando houver volume real de respostas.
+

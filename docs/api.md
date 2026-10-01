@@ -104,7 +104,7 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 | POST | `/admin/questions/:id/image` | admin | CONT-RF-013 | Upload de imagem (Cloudinary) — `multipart` |
 | DELETE | `/admin/questions/:id/image` | admin | CONT-RF-013 | Remove imagem |
 | GET | `/admin/questions/pending` | admin | CONT-RF-014 | Fila de revisão (FIFO) |
-| GET | `/admin/questions/published?subject_id=` | admin | CONT-RF-018 | Publicadas completas da matéria, sem paginação (consumido pelo `ai-bot`) |
+| GET | `/admin/questions/published?subject_id=` | admin | CONT-RF-018 | Publicadas completas da matéria (com `difficulty_level`), sem paginação (consumido pelo `ai-bot`) |
 | POST | `/admin/questions/:id/approve` | admin | CONT-RF-015 | Aprova pergunta de parceiro |
 | POST | `/admin/questions/:id/reject` | admin | CONT-RF-016 | Rejeita (motivo obrigatório) |
 

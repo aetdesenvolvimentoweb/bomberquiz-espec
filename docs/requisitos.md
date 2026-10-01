@@ -233,7 +233,7 @@ O **inventário consolidado de endpoints** (todos os módulos) e as convenções
 - ✅ Estrutura da pergunta no MVP → 4 alternativas fixas, 1 única correta, justificativa obrigatória, fonte oficial em texto livre opcional, 1 imagem opcional. ADR-0016 / CONT-RF-010.
 - ✅ Workflow de aprovação de perguntas → admin publica direto; parceiro envia para fila (`pending_review`); admin aprova ou rejeita com motivo obrigatório. ADR-0016 / CONT-RF-014..016.
 - ✅ Reset de estatísticas em edição de pergunta → admin escolhe via flag `reset_stats` no PATCH; UI sugere `true` quando gabarito muda. Respostas antigas são preservadas (`stats_reset_at`). CONT-RF-011 CA-4.
-- ✅ Fórmula de nível de dificuldade da pergunta → bandas `unrated` (< 30 respostas) / `easy` (≥ 70%) / `medium` (40–70%) / `hard` (< 40%), recalculadas por job diário às 00:00 (`America/Sao_Paulo`). CONT-RF-017.
+- ✅ Fórmula de nível de dificuldade da pergunta → 5 níveis (`very_easy` ≥ 85% / `easy` 70–85% / `medium` 45–70% / `hard` 30–45% / `very_hard` < 30%) sobre a taxa de acerto **suavizada** (10 respostas virtuais a 57,5%), recalculados por job diário às 00:00 (`America/Sao_Paulo`). Pergunta sem respostas é `medium`. Revisado em 2026-10-01 (antes: `unrated` abaixo de 30 respostas e 3 faixas). CONT-RF-017 / ADR-0045.
 - ✅ Versionamento de perguntas após atualização do manual → sem mecanismo automático no MVP; admin edita ou arquiva. Hard-delete só com `total_answers=0`. CONT-RF-012.
 - ✅ Hierarquia entre administradores → todos iguais (mantém ADR-0005).
 - ✅ Filtro de matéria do parceiro → cadastro livre em qualquer matéria `active`, sem vinculação por especialidade no MVP. PART-RF-002.

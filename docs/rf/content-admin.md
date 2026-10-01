@@ -205,7 +205,7 @@ Soft-delete reversível. Matéria `archived` não pode receber novas perguntas n
 Lista perguntas do catálogo, com filtros amplos para gestão e revisão.
 
 **Critérios de aceitação:**
-- **CA-1:** `GET /admin/questions` retorna `{ id, subject_id, subject_name, axis_name, statement_preview, status, author_id, author_name, has_image, created_at, published_at, archived_at, total_answers, accuracy }`, paginado.
+- **CA-1:** `GET /admin/questions` retorna `{ id, subject_id, subject_name, axis_name, statement_preview, status, author_id, author_name, has_image, created_at, published_at, archived_at, total_answers, accuracy, difficulty_level }`, paginado. `total_answers`/`difficulty_level` vêm do job diário de CONT-RF-017 (até 24 h de defasagem).
 - **CA-2:** Filtros: `subject_id`, `axis_id`, `status` (multi-select, padrão `published,pending_review`), `author_id`, `q` (busca em enunciado, prefixo case-insensitive), `has_image`.
 - **CA-3:** `statement_preview` traz os primeiros 160 caracteres do enunciado.
 - **CA-4:** `accuracy` = % de acertos sobre `total_answers` (zero se `total_answers=0`).
@@ -362,19 +362,22 @@ Admin recusa a pergunta. **Motivo obrigatório** para que o parceiro entenda o q
 **Ator:** Sistema (job agendado).
 
 **Descrição:**
-Job recorrente que recalcula o `difficulty_level` de toda pergunta `published` com base em `accuracy` e `total_answers`. Executado **diariamente às 00:00** (fuso `America/Sao_Paulo`).
+Job recorrente que recalcula `total_answers`, `correct_answers` e `difficulty_level` de toda pergunta `published` a partir das respostas dos clientes. Executado **diariamente às 00:00** (fuso `America/Sao_Paulo`). Revisado em 2026-10-01 (ADR-0045): 5 níveis e média suavizada no lugar do mínimo de 30 respostas.
 
 **Critérios de aceitação:**
-- **CA-1:** O job percorre todas as perguntas com `status=published` e recalcula:
-  - `total_answers < 30` → `difficulty_level = unrated` ("Não classificada").
-  - `accuracy ≥ 70%` → `easy`.
-  - `40% ≤ accuracy < 70%` → `medium`.
-  - `accuracy < 40%` → `hard`.
-- **CA-2:** `accuracy` considera apenas respostas posteriores a `stats_reset_at` (se existir); respostas anteriores ao reset não entram no cálculo.
-- **CA-3:** O resultado é persistido em `questions.difficulty_level` (enum: `unrated`/`easy`/`medium`/`hard`) e em `questions.difficulty_recomputed_at`.
-- **CA-4:** Job é idempotente (rodar duas vezes no mesmo dia produz o mesmo resultado).
-- **CA-5:** Falhas do job ficam em log e não afetam o resto do sistema — o valor anterior permanece até a próxima execução bem-sucedida.
-- **CA-6:** Perguntas `archived` e `draft` não são processadas (mantém o último valor calculado, se houver).
+- **CA-1:** O job percorre todas as perguntas com `status=published` e calcula a **média suavizada** `p = (acertos + 10 × 0,575) / (respostas + 10)`. A pergunta começa como se tivesse 10 respostas "virtuais" no centro da faixa média, então sem respostas ela é `medium` e com poucas se move devagar. Faixas sobre `p`:
+  - `p ≥ 85%` → `very_easy` ("Muito fácil").
+  - `70% ≤ p < 85%` → `easy` ("Fácil").
+  - `45% ≤ p < 70%` → `medium` ("Médio").
+  - `30% ≤ p < 45%` → `hard` ("Difícil").
+  - `p < 30%` → `very_hard` ("Muito difícil"). Fica perto dos 25% de chute com 4 alternativas, o que também sinaliza uma pergunta possivelmente mal formulada.
+- **CA-2:** Contam só as **respostas efetivas** (`submitted_index` preenchido) posteriores a `stats_reset_at`, se existir. As questões deixadas em branco num quiz finalizado ou expirado (marcadas como erradas para o desempenho do aluno, QUIZ-RF-003) **não** entram.
+- **CA-3:** O resultado é persistido em `questions.total_answers`, `questions.correct_answers`, `questions.difficulty_level` (enum `very_easy`/`easy`/`medium`/`hard`/`very_hard`, default `medium`) e `questions.difficulty_recomputed_at`. `accuracy` exibida nas respostas HTTP é a taxa **real** (`correct_answers / total_answers`, 0 sem respostas), não a suavizada.
+- **CA-4:** Job é idempotente: recalcula tudo do zero a partir das respostas, então rodar duas vezes no mesmo dia produz o mesmo resultado.
+- **CA-5:** Falhas do job ficam em log e não afetam o resto do sistema. A escrita é numa transação só, e o valor anterior permanece até a próxima execução bem-sucedida.
+- **CA-6:** Perguntas `archived` e `draft` não são processadas e mantêm o último valor calculado, se houver.
+- **CA-7:** Pergunta nova nasce `medium` com contadores zerados. O reset de estatísticas (CONT-RF-011 CA-4) zera os contadores e volta a `medium` na hora, sem esperar o job.
+- **CA-8:** O recálculo também pode ser disparado manualmente (`bun run recompute:question-difficulty`), por exemplo logo após um deploy.
 
 ---
 
@@ -387,7 +390,7 @@ Job recorrente que recalcula o `difficulty_level` de toda pergunta `published` c
 Devolve, numa única chamada, todas as perguntas `published` de uma matéria com enunciado, alternativas e gabarito completos. É a base que o `ai-bot` usa para não gerar perguntas repetidas (ADR-0044). A listagem de CONT-RF-009 não serve: traz só `statement_preview` (160 caracteres) e pagina em até 100 itens. O detalhe exige uma requisição por pergunta.
 
 **Critérios de aceitação:**
-- **CA-1:** `GET /admin/questions/published?subject_id=<id>` retorna `{ items: [{ id, statement, alternatives[4], correct_index, explanation, source_reference, published_at }] }`, apenas com `status=published` da matéria informada.
+- **CA-1:** `GET /admin/questions/published?subject_id=<id>` retorna `{ items: [{ id, statement, alternatives[4], correct_index, explanation, source_reference, published_at, difficulty_level }] }`, apenas com `status=published` da matéria informada.
 - **CA-2:** Sem paginação. A ordem de grandeza esperada é de até ~1000 perguntas por matéria.
 - **CA-3:** `subject_id` é obrigatório (422 sem ele). Matéria inexistente ou sem publicadas devolve lista vazia.
 - **CA-4:** Restrito a admin (401/403).
