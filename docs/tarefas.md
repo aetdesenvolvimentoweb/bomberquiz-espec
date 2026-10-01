@@ -683,6 +683,11 @@
     - Registrado antes de `/admin/questions/{id}`, para "published" não ser lido como id.
     - e2e novo em `tests/e2e/admin-questions-published.test.ts` (filtra status/matéria, campos completos, 422 sem `subject_id`, 403 para não-admin). **Não executado localmente** (Docker indisponível na máquina) e fica para o CI. Typecheck limpo.
     - **Deploy pendente:** até lá, o bot gera normalmente e avisa que a checagem não foi feita.
+    - Suíte e2e local: **211/211** (incluindo os 4 novos).
+    - **CI quebrou num teste antigo e instável, não relacionado:** `admin-questions-review` › "fluxo completo" semeava as pendências com `submittedAt: null`, mas a fila ordena por `submitted_at`. Com as duas nulas, a ordem FIFO fica indefinida no Postgres: passava localmente e invertia no CI.
+      - Corrigido no seed (`submittedAt: now`, coerente com a invariante de que toda pendente tem `submitted_at`).
+      - Conferido 3× seguidas.
+    - **Observado, não investigado:** localmente, a suíte de integração trava no `CheckoutUseCase` CA-6 (checkouts simultâneos). No CI a etapa de integração passa.
   - **Bot:**
     - **Prevenção:** até 60 publicadas mais relacionadas a cada trecho (TF-IDF local) entram no prompt com instrução de não repetir.
     - **Detecção:** triagem lexical (enunciado + resposta correta), seguida de uma chamada à IA que dá o veredito, com fallback lexical.
