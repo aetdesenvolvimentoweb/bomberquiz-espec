@@ -355,3 +355,36 @@ A ponte entre os dois mundos é o `external_reference` — gravamos nele o id da
 **Consequências:** os preços da vitrine vêm de `GET /plans` (público por SUB-RF-001 CA-1), nunca de texto fixo — escrevê-los à mão transformaria o admin de planos da fatia anterior numa armadilha, com o reajuste feito no painel e a vitrine anunciando o preço velho. O CTA é único (cadastro): levar a intenção de plano através do cadastro exigiria carregá-la pelo link do e-mail de verificação, e o estado sobreviveria a um clique em outro dispositivo só por sorte; a assinatura acontece depois, já dentro do app. `og-image.png` fica **fora** do precache do service worker (`globIgnores`) — o `**/*.png` do Workbox a incluiria, e todo usuário baixaria ~150KB de uma imagem que só robôs externos leem. A arte atual é provisória, gerada por HTML+Chromium, com a fonte versionada em `web/tools/og-image.html` para ser substituível.
 
 **Ponto em aberto, não resolvido nesta fatia:** a vitrine só pinta depois que `GET /me` responde (é o que decide entre redirecionar e renderizar), e só então a consulta de planos começa — duas idas ao servidor em série antes do primeiro pixel. Em produção o Neon suspende o compute após 5 min de inatividade, então um visitante que clica no link num horário morto pode ver a tela de carregamento por alguns segundos, justamente na página em que ele tem zero compromisso e sai fácil. Renderizar a vitrine antes de saber da sessão resolveria, ao custo de um flash de página de venda para quem já é cliente. Fica registrado para decidir com dado real de uso, não por palpite.
+
+## 0043 — Recorte de norma por edital: a IA seleciona, o código copia o texto literal (2026-10-01)
+
+**Contexto:** o `ai-bot` gera questões a partir de um PDF de material; quando esse material é a norma inteira, o modelo cobre dispositivos que o edital não cobra. Era preciso reduzir a norma ao que o certame pede, mantendo a organização em capítulos, artigos, parágrafos e incisos — ela é parte essencial do material de estudo.
+
+**Decisão:**
+1. **A IA nunca escreve o texto da norma.** Um parser determinístico (regex) quebra a norma em unidades — o artigo com seus §/incisos/alíneas, ou o item numerado em normas técnicas — e em cabeçalhos estruturais. A IA recebe as unidades identificadas (`[U12] Art. 5º ...`) e devolve **só ids**; o PDF é montado com o texto original. Elimina o risco de o modelo parafrasear ou "corrigir" a letra da lei, que é exatamente o que a banca cobra.
+2. **Duas chamadas:** (a) extrair do edital o que ele cobra desta norma — citação de dispositivos e/ou temas, inclusive "norma integral" e "norma não cobrada"; (b) selecionar as unidades, em lotes de ~60k tokens com os cabeçalhos abertos repetidos no início de cada lote, sequenciais para aproveitar o cache de prompt.
+3. **Granularidade = artigo.** Se o edital pede só "art. 5º, inciso III", o artigo 5º entra inteiro. Recortar abaixo do artigo exigiria a IA apontar sub-dispositivos com precisão bem maior e perderia o caput que dá sentido ao inciso; a tela de revisão cobre o ajuste fino desmarcando o que sobrar.
+4. **Stateless:** `/recorte/analyze` devolve a estrutura completa ao navegador e `/recorte/pdf` a recebe de volta. Nada é guardado entre a análise e o download — coerente com o resto do bot (sem banco, sem fila). Aceitável porque a API só roda em localhost para o próprio admin.
+
+**Consequências:** a fidelidade do recorte depende do parser reconhecer a estrutura; PDFs de layout incomum podem exigir novas regras (o próprio `NO-21.pdf` revelou três: sumário, título quebrado e anexos). Tabelas e figuras viram texto corrido; PDF escaneado continua sem suporte (sem OCR), como na geração. O PDF usa as fontes padrão (WinAnsi): caracteres fora do Latin-1 são trocados por equivalentes ou `?`. `pdf-lib` foi escolhida por ser JS puro e não depender de binários nativos no Bun.
+
+## 0044 — `ai-bot`: evitar perguntas duplicadas com triagem lexical local + veredito da IA, a partir de endpoint dedicado em produção (2026-10-01)
+
+**Contexto:** o `ai-bot` gera perguntas sem saber quais já estão publicadas na matéria, e o usuário quer evitar perguntas repetidas. Pelo critério definido com ele, duplicata é **enunciado semelhante com resposta semelhante**. Ele quer prevenção e detecção ao mesmo tempo, considerando só as **publicadas**. Hoje a maior matéria tem ~50 perguntas, mas a meta é de 500 a 1000 por matéria. A API de produção não tinha como entregar essas perguntas completas de forma eficiente: a listagem traz o enunciado truncado em 160 caracteres e não traz alternativas, e o detalhe exige uma requisição por pergunta.
+
+**Decisão:**
+1. **Endpoint dedicado em produção (CONT-RF-018).** `GET /admin/questions/published?subject_id=` devolve as publicadas completas numa chamada, reaproveitando `findPublishedBySubjectId`, que já existia para o sorteio do quiz. A outra opção, N chamadas de detalhe a partir do bot, custaria ~1000 requisições por geração na meta de volume.
+2. **Prevenção:** para cada trecho do material, o bot seleciona por TF-IDF as **até 60** publicadas mais relacionadas e as envia no prompt com a instrução de não repetir o mesmo conhecimento com a mesma resposta. Com o volume atual vão todas. Com 1000, só as do assunto do trecho, o que mantém o custo do prompt constante.
+3. **Detecção em duas etapas:**
+   - Uma triagem lexical local (TF-IDF sobre enunciado e resposta correta, sem serviço externo) aponta até 3 candidatas por pergunta gerada, entre as publicadas e as anteriores do mesmo lote.
+   - **Uma única chamada à IA** decide se cada candidata é duplicata de fato. Isso pega paráfrases que só a similaridade de palavras não pegaria.
+   - Se a IA falhar, vale a regra lexical: enunciado ≥ 0,6 e resposta ≥ 0,5, ou enunciado ≥ 0,85.
+   - O resultado é **um aviso na revisão, nunca um descarte automático**: a decisão final fica com o admin.
+4. **Base indisponível não bloqueia a geração:** com 404/erro (por exemplo, produção ainda sem o endpoint), o bot gera sem checagem e avisa na tela. Sessão expirada (401) bloqueia, porque a publicação falharia em seguida.
+
+**Consequências:**
+- Nenhum serviço novo (embeddings, vetor) e nenhum dado persistido no bot.
+- O custo extra por geração é uma chamada curta à IA, só quando há candidatas.
+- A triagem lexical tem limite conhecido: uma paráfrase sem nenhum termo em comum não vira candidata e escapa. Na prática, perguntas sobre o mesmo dispositivo compartilham termos técnicos ("jaguatirica", "puçá", "círculo de ação"). Se isso falhar em uso real, o próximo passo é trocar a triagem por embeddings.
+- **Dificuldade:** no critério combinado, mesmo conteúdo com o mesmo nível é duplicata, e o mesmo conteúdo em nível mais alto é permitido. Isso fica para a etapa de dificuldade, quando a IA passar a rotular o nível das perguntas geradas.
+- O nível por pergunta em produção (CONT-RF-017) ainda **não está implementado**: não há coluna, e `total_answers`/`accuracy` estão fixos em 0. Por isso o endpoint não devolve nível.

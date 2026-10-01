@@ -657,6 +657,41 @@
   - **CI quebrado no dia seguinte pela mesma fragilidade, agora eliminada de vez.** A frase de fecho foi trocada de "Preparação que vira resultado" para "**Dedicação** que vira resultado" (justamente para não repetir "Preparação", que já abria o `h1`) e o teste que a exigia literalmente falhou — **código certo, teste errado**. O `deploy` tem `needs: ci` e o `ci` roda `bun run test`, então a vitrine não chegou a produção: o CI barrou como deveria. Correções: (a) o teste do fecho passou a verificar a **decisão** e não a frase — que o último filho da seção dos passos é um `<p>` não vazio e **não** um heading (a escolha de acessibilidade documentada no componente), ancorado nos `<h3>` dos cards; (b) o rótulo do CTA, que estava preso em **4 asserções**, deu lugar a um helper que acha os links pelo `href="/cadastro"` — o que os testes querem garantir é o destino, não a redação. `grep` confirma que nenhuma copy de venda restou presa em teste. Verificado que o teste novo **falha** ao trocar o `<p>` por `<h2>`, para não ser verde vazio.
   - **Ponto em aberto (ADR-0042):** a vitrine só pinta depois de `GET /me` responder, e só então a consulta de planos começa — duas idas ao servidor em série antes do primeiro pixel. Com o Neon suspenso após 5 min de inatividade, um visitante que clica no link em horário morto pode ver a tela de carregamento por alguns segundos, justamente onde ele tem zero compromisso. Renderizar antes de saber da sessão resolveria, ao custo de um flash de página de venda para quem já é cliente. Decidir com dado real de uso.
 
+- [x] 2026-10-01 — **`ai-bot`: recorte de norma por edital** (ADR-0043).
+  - **Problema:** o material de estudo enviado à geração de questões costuma ser a norma inteira, e o certame cobra só parte dela — sobram questões sobre dispositivos que o edital não pede.
+  - **Entregue:** nova aba "Recortar norma" no `bot/web`. Recebe o PDF do edital e o da norma; a IA identifica o que o edital cobra desta norma e seleciona os dispositivos correspondentes; uma tela de revisão permite marcar/desmarcar trechos (com a justificativa da IA ao lado de cada um) e editar o título; sai um PDF com o **texto literal** da norma e a hierarquia preservada (Título/Capítulo/Seção em cabeçalhos, rótulos de Art./§/incisos/alíneas em negrito, recuo por nível, `(...)` onde houve omissão). Botão "Usar na geração de questões" leva o PDF direto como material para a aba de geração.
+  - **API:** `POST /recorte/analyze` (multipart `editalPdf` + `normaPdf`) e `POST /recorte/pdf` (JSON com a estrutura + ids selecionados → `application/pdf`). Stateless, como o resto do bot. Código em `bot/api/src/lib/norma/`; `readPdfField` extraído para `lib/read-pdf-field.ts` e compartilhado com `/generate`; `PdfTextExtractor.extractLines()` preserva quebras de linha e remove cabeçalho/rodapé repetidos. Nova dependência: `pdf-lib`.
+  - **Parser determinístico** em três modos: `lei` (Art./§/incisos/alíneas sob PARTE/LIVRO/TÍTULO/CAPÍTULO/SEÇÃO/SUBSEÇÃO), `tecnica` (itens 1/1.1/1.1.1) e `blocos` (fallback). Ajustado contra o `NO-21.pdf` real: entradas de **sumário** eram lidas como capítulos, título em várias linhas curtas saía só "Norma", e "Anexo 1" em caixa mista era engolido pelo último artigo — os três corrigidos e cobertos por teste.
+  - **Testes:** api **43** (parser nos três modos, sumário/anexos, montagem com cabeçalhos ancestrais e `(...)`, lotes para a IA, e PDF gerado → reextraído com o próprio `PdfTextExtractor` conferindo ordem, rótulos, acentos, `§`, `º` e aspas curvas). Typecheck limpo em api e web; build do web ok.
+  - **Pendente:** validação ponta a ponta com edital real (a chamada à IA não foi exercitada nesta sessão — não havia edital disponível em `bot/tmp/`).
+  - **Correção após o 1º teste real (MOB Salvamento Terrestre, mesma data):** o recorte devolveu só lixo. Três causas:
+    - Os artigos de lei transcritos no cap. 4 do manual jogaram o parser no modo "lei".
+    - Nesse modo, "CAPÍTULO 3"/"Seção 1" não eram reconhecidos (só numeração romana), então os caps. 3–4 ficaram fora das unidades e os caps. 6 e 10 foram engolidos pelo "Art. 53".
+    - A IA recebia só os primeiros 1.500 caracteres como identificação da norma. Como o PDF começa no cap. 3, ela concluiu que a norma era "Contenção de Animais" e listou um único item do edital.
+
+    Corrigido com:
+    - novo modo **`manual`**, escolhido quando há mais cabeçalhos que artigos: cada seção vira uma unidade de texto corrido, com parágrafos por fim de frase, listas e subtítulos curtos preservados, e artigos citados mantidos como parágrafos;
+    - numeração arábica em CAPÍTULO/Seção;
+    - identificação da norma enviada à IA = início do texto + **lista de cabeçalhos detectados**, com instrução explícita de que o arquivo pode ser só parte do documento e de listar cada capítulo/seção citado como item separado;
+    - nome da norma devolvido pela IA (`nome_norma`) como título quando o PDF não tem capa.
+
+    Também corrigido: o regex de artigo lia "Art. 125 - O Corpo…" como sufixo "-O". A NO-21 segue no modo `lei` (regressão conferida). Testes: api **46**.
+
+- [x] 2026-10-01 — **`ai-bot`: evitar perguntas duplicadas na matéria** (ADR-0044, CONT-RF-018).
+  - **Produção (`bomberquiz-api`):** novo `GET /admin/questions/published?subject_id=` (admin), com as publicadas completas sem paginação.
+    - Reaproveita `findPublishedBySubjectId`.
+    - Registrado antes de `/admin/questions/{id}`, para "published" não ser lido como id.
+    - e2e novo em `tests/e2e/admin-questions-published.test.ts` (filtra status/matéria, campos completos, 422 sem `subject_id`, 403 para não-admin). **Não executado localmente** (Docker indisponível na máquina) e fica para o CI. Typecheck limpo.
+    - **Deploy pendente:** até lá, o bot gera normalmente e avisa que a checagem não foi feita.
+  - **Bot:**
+    - **Prevenção:** até 60 publicadas mais relacionadas a cada trecho (TF-IDF local) entram no prompt com instrução de não repetir.
+    - **Detecção:** triagem lexical (enunciado + resposta correta), seguida de uma chamada à IA que dá o veredito, com fallback lexical.
+    - O resultado aparece como **aviso âmbar na revisão** ("Possível duplicata de pergunta já publicada" / "…da questão N deste lote"), com o enunciado parecido e o motivo. Nada é descartado sozinho.
+    - O toast informa contra quantas publicadas a comparação foi feita.
+    - Código em `bot/api/src/lib/duplicates/`.
+    - Testes: bot **56**.
+  - **Achado:** o nível de dificuldade por pergunta em produção (CONT-RF-017) não existe no código. Não há coluna, `total_answers`/`accuracy` estão fixos em 0 e o dashboard do parceiro mostra tudo como "não classificada". O único classificador baseado em respostas é o selo por aluno/matéria (fraco/médio/forte). Isso precisa ser considerado na próxima etapa (dificuldade).
+
 ## Backlog (sem prioridade definida)
 
 - [ ] **Substituir `public/og-image.png` por uma arte definitiva** — a atual é provisória (HTML+Chromium, fonte em `web/tools/og-image.html`). Manter 1200×630 e texto longe das bordas, que alguns aplicativos recortam.

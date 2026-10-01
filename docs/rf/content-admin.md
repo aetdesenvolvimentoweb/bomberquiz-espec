@@ -378,6 +378,22 @@ Job recorrente que recalcula o `difficulty_level` de toda pergunta `published` c
 
 ---
 
+## CONT-RF-018 — Listar perguntas publicadas completas de uma matéria
+
+**Prioridade:** Importante (suporte ao `ai-bot`).
+**Ator:** Administrador (na prática, o `ai-bot` autenticado como admin).
+
+**Descrição:**
+Devolve, numa única chamada, todas as perguntas `published` de uma matéria com enunciado, alternativas e gabarito completos. É a base que o `ai-bot` usa para não gerar perguntas repetidas (ADR-0044). A listagem de CONT-RF-009 não serve: traz só `statement_preview` (160 caracteres) e pagina em até 100 itens. O detalhe exige uma requisição por pergunta.
+
+**Critérios de aceitação:**
+- **CA-1:** `GET /admin/questions/published?subject_id=<id>` retorna `{ items: [{ id, statement, alternatives[4], correct_index, explanation, source_reference, published_at }] }`, apenas com `status=published` da matéria informada.
+- **CA-2:** Sem paginação. A ordem de grandeza esperada é de até ~1000 perguntas por matéria.
+- **CA-3:** `subject_id` é obrigatório (422 sem ele). Matéria inexistente ou sem publicadas devolve lista vazia.
+- **CA-4:** Restrito a admin (401/403).
+
+---
+
 ## Pendências deste módulo — resolvidas em 2026-05-28
 
 Todas resolvidas (CONT-P-01 a CONT-P-04: fórmula de dificuldade, versionamento de perguntas, hierarquia entre admins, reset parcial vs. total de estatísticas) — respostas completas em [`../requisitos.md`](../requisitos.md) § Questões em aberto → Resolvidas.
