@@ -6,13 +6,13 @@ Pedido: comparar os 85 RFs de `requisitos/docs/rf/*.md` com o que realmente exis
 Legenda: ✅ implementado (API + Web) · 🟡 parcial · ❌ não implementado · 🗑️ removido de api/web (ver coluna Bot)
 
 ## Resumo
-Contagem atualizada em 2026-10-13, depois de parceiros (PROF-RF-011 a 013), cortesias e cupons. Em 2026-10-01 era 61 / 4 / 11 / 9.
+Contagem atualizada em 2026-10-13, depois de parceiros (PROF-RF-011 a 013), cortesias, cupons e desativar/reativar conta (PROF-RF-007/008). Em 2026-10-01 era 61 / 4 / 11 / 9.
 
 | Situação | Qtde |
 |---|---|
-| ✅ Implementado | 70 |
-| 🟡 Parcial | 3 |
-| ❌ Não implementado | 3 |
+| ✅ Implementado | 72 |
+| 🟡 Parcial | 2 |
+| ❌ Não implementado | 2 |
 | 🗑️ Removido (Módulo 7, coberto parcialmente pelo bot) | 9 |
 | **Total** | **85** |
 
@@ -40,8 +40,8 @@ Contagem atualizada em 2026-10-13, depois de parceiros (PROF-RF-011 a 013), cort
 | PROF-RF-004 | Trocar e-mail | ✅ | `POST /me/email` + `/me/email/confirm` · `/perfil/email/confirmar` |
 | PROF-RF-005 | Avatar | ❌ | Nenhuma rota `/me/avatar` e nenhuma tela. Só existe o campo `avatarUrl`, sempre `null` |
 | PROF-RF-006 | Reaceite de termos | ✅ | `POST /me/consent` · `/consentimento` |
-| PROF-RF-007 | Desativar conta | 🟡 | Desativação e logout funcionam, **mas o login não bloqueia contas `inactive`** (CA-3): `login.usecase.ts` só barra `deleted`. A conta continua `inactive` e usável, e por isso deixa de receber lembretes de expiração (o filtro `status='active'` do CA-4 se aplica a ela) |
-| PROF-RF-008 | Reativar conta | ❌ | Sem `POST /auth/reactivate` e sem tratamento de `account_inactive` no web |
+| PROF-RF-007 | Desativar conta | ✅ | Corrigido em 2026-10-13: o login de conta `inactive` responde 403 `account_inactive` depois de conferir a senha (antes só barrava `deleted`). A migration 0027 encerra as sessões de contas que já estavam `inactive` |
+| PROF-RF-008 | Reativar conta | ✅ | 2026-10-13: `POST /auth/reactivate` e tela "Sua conta está desativada" no login. 401 genérico em vez do 404 da E-1 (aditivo em `rf/profile.md`) |
 | PROF-RF-009 | Excluir conta (LGPD) | ✅ | `DELETE /me` · seção "zona de perigo" do perfil |
 | PROF-RF-010 | Sessão única | ✅ | `revocation_reason=session_replaced` + 401 tratado no web |
 | PROF-RF-011 | Buscar/listar usuários (admin) | ✅ (2026-10-13) | `GET /admin/users` · `/painel/usuarios` |
@@ -127,7 +127,7 @@ Retirado de produção em 2026-07-27 (ADR-0039). Nenhum resquício em `api/src` 
 ## Divergências encontradas na documentação
 1. `requisitos/CLAUDE.md` diz que **painel financeiro e admin de planos** estão fora do MVP, mas os dois foram implementados (API e web).
 2. `api.md` lista como se existissem `/me/avatar`, `/auth/reactivate`, `/admin/users*`, `/admin/courtesies*` e `/admin/coupons*`, sem avisar que não foram implementados. `/admin/financial/overview` também aparece duas vezes.
-3. PROF-RF-007/008 constam como entregues no bootstrap do web (tarefas.md, 2026-07-07), mas a reativação ficou "fora de escopo por falta de endpoint" e não voltou a ser registrada como pendência. **Isso é um bug funcional, não só uma lacuna de documentação.**
+3. PROF-RF-007/008 constam como entregues no bootstrap do web (tarefas.md, 2026-07-07), mas a reativação ficou "fora de escopo por falta de endpoint" e não voltou a ser registrada como pendência. **Isso é um bug funcional, não só uma lacuna de documentação.** (Corrigido em 2026-10-13.)
 4. AUTH-RF-009 CA-3 pede o limite por e-mail; o código limita por IP.
 
 ## Próximo passo (após aprovação)

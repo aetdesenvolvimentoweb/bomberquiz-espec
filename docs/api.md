@@ -58,7 +58,7 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 | POST | `/auth/register` | público | AUTH-RF-001 | Cadastro (cria `client`, dispara verificação) |
 | GET/POST | `/auth/verify-email` | público | AUTH-RF-002 | Verifica e-mail via token (uso único, 24h) |
 | POST | `/auth/resend-verification` | público | AUTH-RF-003 | Reenvia verificação (resposta sempre genérica) |
-| POST | `/auth/login` | público | AUTH-RF-004 | Login; avalia promoção admin (AUTH-RF-010) |
+| POST | `/auth/login` | público | AUTH-RF-004 | Login; avalia promoção admin (AUTH-RF-010). Conta `inactive` com a senha certa → 403 `account_inactive` (PROF-RF-007 CA-3); com a senha errada, o 401 de sempre |
 | POST | `/auth/logout` | sessão | AUTH-RF-005 | Encerra a sessão (idempotente) |
 | POST | `/auth/forgot-password` | público | AUTH-RF-006 | Solicita recuperação (token 1h) |
 | POST | `/auth/reset-password` | público | AUTH-RF-007 | Redefine senha com token; invalida sessões |
@@ -77,7 +77,7 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 | DELETE | `/me/avatar` | sessão | PROF-RF-005 | ❌ **não implementado** (conferência 2026-10-01) — Remove avatar (volta a placeholder) |
 | POST | `/me/consent` | sessão | PROF-RF-006 | Reaceite de termos quando a versão muda |
 | POST | `/me/deactivate` | sessão | PROF-RF-007 | Desativa conta (reversível; reautenticação) |
-| POST | `/auth/reactivate` | público | PROF-RF-008 | ❌ **não implementado** (conferência 2026-10-01) — Reativa conta `inactive` no fluxo de login |
+| POST | `/auth/reactivate` | público | PROF-RF-008 | Reativa conta `inactive` com e-mail + senha e já emite a sessão (resposta igual à do login). Inexistente, excluída ou senha errada → 401 `invalid_credentials`; conta já ativa → equivale a um login. Mesmo rate limit do login |
 | DELETE | `/me` | sessão | PROF-RF-009 | Exclusão LGPD (anonimização; reautenticação) |
 | GET | `/admin/users` | admin | PROF-RF-011 | Busca/lista usuários (filtros `email`, `name`, `role`, `status`) |
 | GET | `/admin/users/:id` | admin | PROF-RF-014 | ❌ **não implementado** (conferência 2026-10-01) — Detalhe de usuário + resumo financeiro |

@@ -190,6 +190,12 @@ Fluxo de retorno ao sistema após uma desativação. Acessado a partir da respos
 **Erros previstos:**
 - **E-1:** Conta `deleted` → HTTP 404, mensagem genérica.
 
+### Aditivos de implementação (2026-10-13) — PROF-RF-007 e 008
+- **PROF-RF-007 CA-3:** o 403 `account_inactive` só sai depois de conferir a senha; com a senha errada, a conta `inactive` recebe o 401 `invalid_credentials` de sempre. Sem isso, quem soubesse só o e-mail descobriria que a conta existe e está desativada. O `reason` vai em `error.details.reason`, no envelope de erro padrão. O 403 não conta como falha no lockout de login.
+- **PROF-RF-008:** rota `POST /auth/reactivate` com `{ email, password }` — a tela de login guarda o que foi digitado e reenvia ao clicar em "Reativar conta" (CA-2). A resposta é igual à do login, com a sessão já emitida. Conta já `active` → equivale a um login.
+- **PROF-RF-008 E-1 (substituído):** conta `deleted`, e-mail inexistente e senha errada respondem o mesmo **401 `invalid_credentials`**, não 404. A exclusão anonimiza o e-mail (PROF-RF-009), então a conta excluída já não é encontrada, e um 404 ao lado do 401 permitiria descobrir quais e-mails têm conta.
+- **Sessões antigas:** até esta correção o login não barrava conta `inactive`. A migration `0027_revoke_inactive_sessions` encerra uma vez as sessões de contas que estão `inactive`; daqui em diante o desativar faz signOut e o login não emite sessão para elas.
+
 ---
 
 ## PROF-RF-009 — Excluir conta (LGPD — anonimização)
