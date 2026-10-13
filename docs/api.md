@@ -73,15 +73,15 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 | POST | `/me/password` | sessão | PROF-RF-003 | Troca de senha (logado) |
 | POST | `/me/email` | sessão | PROF-RF-004 | Solicita troca de e-mail (confirmação por link) |
 | GET/POST | `/me/email/confirm` | público | PROF-RF-004 | Confirma troca via token; alerta ao e-mail antigo |
-| POST | `/me/avatar` | sessão | PROF-RF-005 | Upload de avatar (Cloudinary) — `multipart` |
-| DELETE | `/me/avatar` | sessão | PROF-RF-005 | Remove avatar (volta a placeholder) |
+| POST | `/me/avatar` | sessão | PROF-RF-005 | ❌ **não implementado** (conferência 2026-10-01) — Upload de avatar (Cloudinary) — `multipart` |
+| DELETE | `/me/avatar` | sessão | PROF-RF-005 | ❌ **não implementado** (conferência 2026-10-01) — Remove avatar (volta a placeholder) |
 | POST | `/me/consent` | sessão | PROF-RF-006 | Reaceite de termos quando a versão muda |
 | POST | `/me/deactivate` | sessão | PROF-RF-007 | Desativa conta (reversível; reautenticação) |
-| POST | `/auth/reactivate` | público | PROF-RF-008 | Reativa conta `inactive` no fluxo de login |
+| POST | `/auth/reactivate` | público | PROF-RF-008 | ❌ **não implementado** (conferência 2026-10-01) — Reativa conta `inactive` no fluxo de login |
 | DELETE | `/me` | sessão | PROF-RF-009 | Exclusão LGPD (anonimização; reautenticação) |
-| GET | `/admin/users` | admin | PROF-RF-011 | Busca/lista usuários |
-| GET | `/admin/users/:id` | admin | PROF-RF-014 | Detalhe de usuário + resumo financeiro |
-| PATCH | `/admin/users/:id/role` | admin | PROF-RF-012/013 | Promove a parceiro / revoga parceiro |
+| GET | `/admin/users` | admin | PROF-RF-011 | ❌ **não implementado** (conferência 2026-10-01) — Busca/lista usuários |
+| GET | `/admin/users/:id` | admin | PROF-RF-014 | ❌ **não implementado** (conferência 2026-10-01) — Detalhe de usuário + resumo financeiro |
+| PATCH | `/admin/users/:id/role` | admin | PROF-RF-012/013 | ❌ **não implementado** (conferência 2026-10-01) — Promove a parceiro / revoga parceiro |
 
 ### Módulo 3 — Conteúdo admin (`content-admin.md`)
 
@@ -153,13 +153,12 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 | POST | `/me/payments/:id/refund` | sessão | SUB-RF-014 | Reembolso total (CDC 7 dias), `reason` opcional. 404 para pagamento inexistente **ou** de outro cliente; 409 `payment_not_refundable`/`refund_window_expired`; 502 sem alterar estado local. Revoga a assinatura correspondente. |
 | GET | `/admin/financial/overview` | admin | SUB-RF-012 | Agregados do período (`from`/`to` em `YYYY-MM-DD`, default mês corrente; `to` inclui o dia inteiro). Receita por plano e por método, estornos, taxas do MP e recebido líquido. **Receita conta pela data do pagamento e estorno pela data do estorno** — inclui pagamentos `refunded` na receita, senão uma compra paga e estornada no mesmo mês fecharia o mês negativo. `fee_unknown_count` diz quantos ainda estão sem taxa: se > 0, taxa e líquido estão incompletos. Sem blocos de cortesia/cupom (tabelas inexistentes) — ver aditivo em `rf/subscriptions.md`. |
 | GET | `/admin/payments` | admin | SUB-RF-012 | Lista paginada de transações — o "endpoint separado de pagamentos" que o CA-4 remetia ao futuro. Filtros `from`, `to` (por `created_at`, para enxergar tentativas pendentes/recusadas), `status`, `method`, `plan_id`, `search` (nome ou e-mail do cliente). Traz `fee_amount`/`received_amount` (`null` = desconhecido, nunca zero) e `mp_legacy_payment_id`, o número que aparece no painel do Mercado Pago. |
-| POST | `/admin/courtesies` | admin | SUB-RF-008 | Concede cortesia |
-| GET | `/admin/courtesies` | admin | SUB-RF-009 | Lista cortesias |
-| POST | `/admin/courtesies/:id/revoke` | admin | SUB-RF-010 | Revoga cortesia (motivo obrigatório) |
-| GET | `/admin/financial/overview` | admin | SUB-RF-012 | Painel financeiro (agregados) |
-| POST | `/admin/coupons` | admin | SUB-RF-013 | Cria cupom |
-| GET | `/admin/coupons` | admin | SUB-RF-013 | Lista cupons |
-| PATCH | `/admin/coupons/:id` | admin | SUB-RF-013 | Edita cupom (campos limitados) |
+| POST | `/admin/courtesies` | admin | SUB-RF-008 | ❌ **não implementado** (conferência 2026-10-01) — Concede cortesia |
+| GET | `/admin/courtesies` | admin | SUB-RF-009 | ❌ **não implementado** (conferência 2026-10-01) — Lista cortesias |
+| POST | `/admin/courtesies/:id/revoke` | admin | SUB-RF-010 | ❌ **não implementado** (conferência 2026-10-01) — Revoga cortesia (motivo obrigatório) |
+| POST | `/admin/coupons` | admin | SUB-RF-013 | ❌ **não implementado** (conferência 2026-10-01) — Cria cupom |
+| GET | `/admin/coupons` | admin | SUB-RF-013 | ❌ **não implementado** (conferência 2026-10-01) — Lista cupons |
+| PATCH | `/admin/coupons/:id` | admin | SUB-RF-013 | ❌ **não implementado** (conferência 2026-10-01) — Edita cupom (campos limitados) |
 
 > SUB-RF-002 (trial ao verificar e-mail), SUB-RF-007 (lembretes), SUB-RF-011 (`access_status`) e SUB-RF-015 (aplicação de cupom) são **gatilhos/jobs/serviços internos**, não endpoints.
 

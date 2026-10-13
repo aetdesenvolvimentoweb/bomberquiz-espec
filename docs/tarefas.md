@@ -32,6 +32,19 @@
 
 ## A realizar — Próximos passos
 
+- [ ] **Conferência de RFs × código real (2026-10-01)** — tabela completa em [`conferencia-rfs-2026-10-01.md`](conferencia-rfs-2026-10-01.md). os 85 RFs foram verificados contra `api/`, `web/` e `bot/`, sem confiar no status declarado nos docs. Resultado: 61 implementados, 4 parciais, 11 não implementados e 9 do Módulo 7 removidos (ADR-0039; o `ai-bot` cobre parte). Pendências encontradas:
+  - [ ] **🐞 Bug — PROF-RF-007 CA-3:** conta `inactive` faz login normalmente. `login.usecase.ts` só barra `deleted`, então desativar a conta equivale a um logout. Efeito colateral: o usuário continua usando o app com `status=inactive` e para de receber os lembretes de expiração, que filtram `users.status='active'` (PROF-RF-007 CA-4). A correção depende de PROF-RF-008.
+  - [ ] **PROF-RF-008 — Reativar conta:** não existem `POST /auth/reactivate` nem tela no web (deixado de fora no bootstrap do web em 2026-07-07 e nunca registrado como pendência).
+  - [ ] **PROF-RF-005 — Avatar:** não existem `POST/DELETE /me/avatar` nem tela; `avatarUrl` é sempre `null`.
+  - [ ] **PROF-RF-011 a 014 — Gestão de usuários pelo admin:** não existem `/admin/users`, `/admin/users/:id` nem `PATCH /admin/users/:id/role`, nem telas. Hoje promover ou revogar Parceiro só é possível direto no banco.
+  - [ ] **AUTH-RF-008 CA-3 — Job de limpeza de sessões** inativas há mais de 7 dias (já citado no Backlog, junto do dump de backup).
+  - [ ] **AUTH-RF-009 CA-3:** o limite de reenvio de verificação e de recuperação de senha está por **IP** (`rateLimitByIp(3, 1h)`); o RF pede por **e-mail**. Decidir entre ajustar o código ou o RF.
+  - [ ] **SUB-RF-003 — Checkout:** o método saldo Mercado Pago responde 422 `method_not_supported_yet` e o checkout não aceita cupom.
+  - [ ] **SUB-RF-008/009/010 (cortesias) e SUB-RF-013/015 (cupons):** nada implementado; as tabelas `courtesies`/`coupons` não existem. Fora do MVP por decisão, mas os RFs continuam marcados como "Essencial (MVP)". Alinhar a prioridade nos RFs.
+  - [ ] **SUB-RF-012 — Painel financeiro:** faltam os blocos de cortesias e cupons, que dependem dos itens acima.
+  - [ ] **`ai-bot` × AIGEN-RF-008:** só existe "aprovar todas"; não há descarte em lote. AIGEN-RF-003 (histórico) não tem equivalente.
+  - [x] Documentação: `api.md` marcado com as rotas não implementadas e a linha duplicada de `/admin/financial/overview` removida. `requisitos/CLAUDE.md` corrigido: painel financeiro e admin de planos não estão mais listados como fora do MVP.
+
 - [x] ~~Definir o tipo de aplicação~~ — PWA web mobile-first (ADR-0010).
 - [x] ~~Definir gateway de pagamento~~ — Mercado Pago (ADR-0012).
 - [x] ~~Definir forma de armazenamento~~ — Postgres no Neon, via Drizzle (ADR-0009).
