@@ -79,9 +79,9 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 | POST | `/me/deactivate` | sessão | PROF-RF-007 | Desativa conta (reversível; reautenticação) |
 | POST | `/auth/reactivate` | público | PROF-RF-008 | ❌ **não implementado** (conferência 2026-10-01) — Reativa conta `inactive` no fluxo de login |
 | DELETE | `/me` | sessão | PROF-RF-009 | Exclusão LGPD (anonimização; reautenticação) |
-| GET | `/admin/users` | admin | PROF-RF-011 | ❌ **não implementado** (conferência 2026-10-01) — Busca/lista usuários |
+| GET | `/admin/users` | admin | PROF-RF-011 | Busca/lista usuários (filtros `email`, `name`, `role`, `status`) |
 | GET | `/admin/users/:id` | admin | PROF-RF-014 | ❌ **não implementado** (conferência 2026-10-01) — Detalhe de usuário + resumo financeiro |
-| PATCH | `/admin/users/:id/role` | admin | PROF-RF-012/013 | ❌ **não implementado** (conferência 2026-10-01) — Promove a parceiro / revoga parceiro |
+| PATCH | `/admin/users/:id/role` | admin | PROF-RF-012/013 | Promove a parceiro (`role=partner`) / revoga parceiro (`role=client`, `reason?`) |
 
 ### Módulo 3 — Conteúdo admin (`content-admin.md`)
 

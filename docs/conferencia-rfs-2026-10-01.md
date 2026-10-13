@@ -42,9 +42,9 @@ Legenda: ✅ implementado (API + Web) · 🟡 parcial · ❌ não implementado �
 | PROF-RF-008 | Reativar conta | ❌ | Sem `POST /auth/reactivate` e sem tratamento de `account_inactive` no web |
 | PROF-RF-009 | Excluir conta (LGPD) | ✅ | `DELETE /me` · seção "zona de perigo" do perfil |
 | PROF-RF-010 | Sessão única | ✅ | `revocation_reason=session_replaced` + 401 tratado no web |
-| PROF-RF-011 | Buscar/listar usuários (admin) | ❌ | Sem `/admin/users` e sem tela |
-| PROF-RF-012 | Promover a Parceiro | ❌ | Sem `PATCH /admin/users/:id/role`; hoje só dá para promover direto no banco |
-| PROF-RF-013 | Revogar Parceiro | ❌ | Mesmo caso do PROF-RF-012 |
+| PROF-RF-011 | Buscar/listar usuários (admin) | ✅ (2026-10-13) | `GET /admin/users` · `/painel/usuarios` |
+| PROF-RF-012 | Promover a Parceiro | ✅ (2026-10-13) | `PATCH /admin/users/:id/role` com `role=partner` · `/painel/usuarios` |
+| PROF-RF-013 | Revogar Parceiro | ✅ (2026-10-13) | `PATCH /admin/users/:id/role` com `role=client` · `/painel/usuarios` |
 | PROF-RF-014 | Detalhe de usuário (admin) | ❌ | Sem `/admin/users/:id` |
 
 ## Módulo 3 — Conteúdo admin (content-admin.md)
