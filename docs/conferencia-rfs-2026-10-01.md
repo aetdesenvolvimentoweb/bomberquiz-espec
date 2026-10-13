@@ -103,7 +103,7 @@ Legenda: ✅ implementado (API + Web) · 🟡 parcial · ❌ não implementado �
 | SUB-RF-009 | Listar cortesias | ❌ | Mesmo caso do SUB-RF-008 |
 | SUB-RF-010 | Revogar cortesia | ❌ | Mesmo caso do SUB-RF-008 |
 | SUB-RF-011 | `access_status` | ✅ | Porta `IAccessPolicy` + adapter Drizzle. O cache opcional do CA-4 não foi feito |
-| SUB-RF-012 | Painel financeiro | 🟡 | `/admin/financial/overview` + `/admin/payments` · `/painel/financeiro` (com CSV). Faltam os blocos de cortesias e cupons |
+| SUB-RF-012 | Painel financeiro | 🟡 | `/admin/financial/overview` + `/admin/payments` · `/painel/movimentacoes` (com CSV). Faltam os blocos de cortesias e cupons |
 | SUB-RF-013 | Cupons (admin) | ❌ | Tabela `coupons` não existe; sem rota e sem tela |
 | SUB-RF-014 | Reembolso | ✅ | `POST /me/payments/:id/refund` · botão no histórico de pagamentos |
 | SUB-RF-015 | Aplicar cupom | ❌ | `coupon_applied` sempre `false` |
