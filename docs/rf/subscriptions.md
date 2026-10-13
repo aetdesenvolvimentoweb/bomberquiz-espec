@@ -116,7 +116,8 @@ Cliente escolhe plano e método de pagamento (opcionalmente aplica cupom). Siste
   - `plan_slug` ∈ planos `is_active=true`.
   - `method=card` aceita `installments ∈ 1..max_installments`; demais métodos ignoram esse campo (1 implícito).
   - `method != card` → `gross_amount = pix_price`; `method=card` → `gross_amount = card_price`.
-- **CA-3:** **Cupom (opcional):** se `coupon_code` informado, sistema valida via SUB-RF-014 CA-3. Cupom inválido **não bloqueia** o checkout — retorna `coupon_applied=false` no payload; cupom válido reduz `net_amount` e incrementa `used_count`.
+- **CA-3:** **Cupom (opcional):** se `coupon_code` informado, sistema valida via SUB-RF-015. Cupom inválido **não bloqueia** o checkout — retorna `coupon_applied=false` no payload; cupom válido reduz `net_amount` e incrementa `used_count`.
+  **Aditivo de implementação (2026-10-13) — cupom inválido passa a bloquear.** O formulário de cartão do Mercado Pago mostra valor e parcelas antes de o cliente pagar, então o desconto precisa ser conhecido antes do checkout. Entrou a prévia `POST /me/checkout/coupon-preview` (botão "Aplicar" em `/planos`), que responde `{ valid, gross_amount, discount_amount, net_amount }` com as mesmas regras do checkout. Com o desconto já mostrado, seguir sem ele e cobrar o preço cheio em silêncio (no cartão, na hora) seria pior que recusar: cupom que deixou de valer entre a prévia e o pagamento responde **422 `coupon_invalid`**, sem criar pagamento, e a tela tira o cupom e pede para tentar de novo. O incremento de `used_count` acontece na confirmação (SUB-RF-015 CA-5), não aqui.
 - **CA-4:** Sistema cria registro em `payments` com `status=pending`, `gross_amount`, `discount_amount`, `net_amount`, `coupon_id?`. Gera `mp_payment_id` chamando a API do Mercado Pago **com o `net_amount`**. Resposta HTTP 201, discriminada por `method`:
   - Para `pix` / `mp_balance`: `{ method: "pix", payment_id, qr_code_base64, qr_code_text, expires_at, gross_amount, discount_amount, net_amount, coupon_applied }`.
   - Para `card` — **contrato revisado em 2026-08-26 (ADR-0040)**: o request leva `card_token`, `payment_method_id`, `device_id` e `installments`, gerados no navegador pelo MercadoPago.js V2 / Card Payment Brick; a resposta é `{ method: "card", payment_id, order_status, payment_status, status_detail, installments, gross_amount, discount_amount, net_amount, coupon_applied }`. **Não existe `checkout_url`** — a especificação original descrevia Checkout Pro (fluxo hospedado com redirect), descartado em favor do Checkout Transparente sobre a mesma API de Orders do PIX. O princípio do CA-4 original é preservado: nenhum dado do cartão passa pelo backend, só o token de uso único.
@@ -389,7 +390,7 @@ Visão consolidada de receitas, cortesias e métricas-chave do negócio.
 
 O payload de CA-1 foi escrito antes de existir código de assinaturas. Ao implementar, três ajustes:
 
-**Saíram do contrato — não existem no sistema.** `courtesies`, `discounts_applied_cents` e `users.active_courtesy` dependem das tabelas `courtesies` e `coupons`, que nunca foram criadas (SUB-RF-008/013 seguem fora do MVP). *(2026-10-13: `courtesies` e `users.active_courtesy` voltaram com a tabela. `courtesies` traz `granted_count`, `total_days_granted` e `by_category` pela data da concessão no período, revogadas depois incluídas, como a receita inclui os estornados. `active_count` é contado no instante da consulta. Só `discounts_applied_cents` segue fora.)* Devolver zeros seria pior que omitir: o admin leria "nenhuma cortesia concedida" onde a verdade é "o sistema não tem cortesias". Voltam junto com as tabelas. `mrr_proxy_cents` e `lapsed_last_30d` também saíram — números derivados que exigiriam definição própria e não foram pedidos.
+**Saíram do contrato — não existem no sistema.** `courtesies`, `discounts_applied_cents` e `users.active_courtesy` dependem das tabelas `courtesies` e `coupons`, que nunca foram criadas (SUB-RF-008/013 seguem fora do MVP). *(2026-10-13: `courtesies` e `users.active_courtesy` voltaram com a tabela. `courtesies` traz `granted_count`, `total_days_granted` e `by_category` pela data da concessão no período, revogadas depois incluídas, como a receita inclui os estornados. `active_count` é contado no instante da consulta. Também em 2026-10-13, com a tabela `coupons`, `discounts_applied_cents` voltou, no mesmo recorte de `total_cents`: pagamentos pagos ou estornados, pela data do pagamento. `total_cents` já é o valor cobrado, depois do desconto.)* Devolver zeros seria pior que omitir: o admin leria "nenhuma cortesia concedida" onde a verdade é "o sistema não tem cortesias". Voltam junto com as tabelas. `mrr_proxy_cents` e `lapsed_last_30d` também saíram — números derivados que exigiriam definição própria e não foram pedidos.
 
 **Entraram — taxa e líquido reais.** `fee_cents`, `received_cents` e `fee_unknown_count`. A spec original não os previa porque, quando foi escrita, não se sabia se o Mercado Pago os expunha; uma sondagem contra a conta de produção mostrou que sim, por um caminho não óbvio (ADR-0041). `fee_unknown_count` é a contagem de pagamentos do período ainda sem taxa conhecida: enquanto for maior que zero, taxa e líquido estão **incompletos**, e a UI diz isso — um líquido inflado com cara de número fechado é o pior defeito possível num painel financeiro.
 
@@ -419,7 +420,7 @@ Admin cria, edita e desativa cupons de desconto aplicáveis no checkout. Ferrame
 - **CA-4:** `GET /admin/coupons` lista cupons (com filtros `is_active`, `valid_at` para validade vigente). Retorna `{ id, code, discount_type, discount_value, valid_from, valid_until, max_uses, used_count, is_active, applies_to_plan_slugs, created_at }`.
 - **CA-5:** `PATCH /admin/coupons/:id` permite editar **apenas** `valid_until`, `max_uses`, `is_active`. **Não permite** alterar `code`, `discount_type` ou `discount_value` — quem precisa de outro percentual cria novo cupom (integridade de pagamentos passados que referenciam o cupom original).
 - **CA-6:** Cupom não pode ser **excluído** — apenas desativado (`is_active=false`). Histórico de uso fica preservado.
-- **CA-7:** Aplicação do cupom no checkout é avaliada em SUB-RF-003 CA-3, com regras detalhadas em SUB-RF-014.
+- **CA-7:** Aplicação do cupom no checkout é avaliada em SUB-RF-003 CA-3, com regras detalhadas em SUB-RF-015.
 
 **Erros previstos:**
 - **E-1:** Acesso de não-admin → HTTP 403.
@@ -482,6 +483,18 @@ Regras de validação e cálculo do desconto quando um cliente informa `coupon_c
 - **CA-4:** Se qualquer validação falha, `coupon_applied=false` no payload de SUB-RF-003 CA-4, sem mensagem específica (não vaza se o cupom existe ou não, motivos diferentes têm a mesma resposta). UI mostra "Cupom inválido ou expirado".
 - **CA-5:** Em sucesso, no momento de confirmação do pagamento (SUB-RF-004 CA-2), incrementa `coupons.used_count` em 1 (transação atômica com a confirmação do pagamento).
 - **CA-6:** Se o pagamento falha (rejected/cancelled), o `used_count` **não é incrementado** (cupom volta a estar disponível).
+
+### Aditivos de implementação (2026-10-13) — SUB-RF-013 e 015
+
+- **Código em maiúsculas.** O cupom é gravado e procurado em maiúsculas (`bombeiro10` vira `BOMBEIRO10`), e o índice único comum garante a unicidade sem diferenciar maiúsculas de minúsculas (SUB-RF-013 CA-2). O índice também segura a corrida entre duas criações simultâneas com o mesmo código (409).
+- **Datas são instantes.** `valid_from`/`valid_until` chegam como ISO completo. A tela converte "de 15/10 a 31/10" em 00:00 do dia 15 e 23:59:59,999 do dia 31, ambos de Brasília. Assim "válido até 31/10" inclui o dia 31 inteiro.
+- **Lista de planos vazia = todos.** Guardar `[]` faria o cupom não valer para plano nenhum.
+- **`max_uses` não desce abaixo de `used_count`** no PATCH (422). Igualar ao uso atual é o jeito de encerrar o cupom sem desativá-lo.
+- **CA-1, limite de usos, conta só os confirmados**, como escrito. Vários PIX pendentes com o mesmo cupom podem ser pagos e passar do limite. Estouro aceito por decisão (2026-10-13): reservar a vaga no checkout exigiria liberar a reserva quando o PIX expira.
+- **CA-2, "usado", inclui `refunded`.** Conta como usado o cupom em pagamento `pending`, `paid` ou `refunded`. O reembolso não devolve o uso (SUB-RF-014 CA-6), e só `failed` libera.
+- **CA-3, piso de R$1,00, corta o desconto, não o preço.** Um cupom de 100% num plano de R$29,90 vira desconto de R$28,90 e cobrança de R$1,00.
+- **CA-4 vale também para a prévia:** inexistente, inativo, fora da validade, esgotado, de outro plano e já usado devolvem o mesmo `{ valid: false }`.
+- **CA-5, atomicidade:** a confirmação no webhook (criar a assinatura, marcar pago, incrementar `used_count` e gravar o audit) passou a rodar numa transação que relê o pagamento com `FOR UPDATE`. Antes não havia transação. Duas entregas simultâneas do mesmo evento podiam criar a assinatura duas vezes, e com cupom contariam o uso duas vezes. O incremento é `used_count = used_count + 1` no banco, e o PATCH do admin nunca grava `used_count`, então editar o cupom não apaga um uso contado no meio do caminho.
 
 ---
 

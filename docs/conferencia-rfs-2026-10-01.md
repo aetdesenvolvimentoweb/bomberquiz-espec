@@ -6,11 +6,13 @@ Pedido: comparar os 85 RFs de `requisitos/docs/rf/*.md` com o que realmente exis
 Legenda: ✅ implementado (API + Web) · 🟡 parcial · ❌ não implementado · 🗑️ removido de api/web (ver coluna Bot)
 
 ## Resumo
+Contagem atualizada em 2026-10-13, depois de parceiros (PROF-RF-011 a 013), cortesias e cupons. Em 2026-10-01 era 61 / 4 / 11 / 9.
+
 | Situação | Qtde |
 |---|---|
-| ✅ Implementado | 61 |
-| 🟡 Parcial | 4 |
-| ❌ Não implementado | 11 |
+| ✅ Implementado | 70 |
+| 🟡 Parcial | 3 |
+| ❌ Não implementado | 3 |
 | 🗑️ Removido (Módulo 7, coberto parcialmente pelo bot) | 9 |
 | **Total** | **85** |
 
@@ -94,7 +96,7 @@ Legenda: ✅ implementado (API + Web) · 🟡 parcial · ❌ não implementado �
 |---|---|---|---|
 | SUB-RF-001 | Planos (público + admin) | ✅ | `GET /plans`, `GET/PATCH /admin/plans` · `/planos`, `/painel/planos` |
 | SUB-RF-002 | Trial automático | ✅ | `StartTrialUseCase` disparado no hook de verificação do Better-Auth |
-| SUB-RF-003 | Checkout | 🟡 | PIX e cartão funcionam. **Saldo Mercado Pago** responde 422 `method_not_supported_yet` e **não aceita cupom** |
+| SUB-RF-003 | Checkout | 🟡 | PIX e cartão funcionam, com cupom desde 2026-10-13. **Saldo Mercado Pago** responde 422 `method_not_supported_yet` |
 | SUB-RF-004 | Webhook do Mercado Pago | ✅ | `POST /webhooks/mercado-pago` |
 | SUB-RF-005 | Minha assinatura | ✅ | `GET /me/subscription` · `/assinatura` |
 | SUB-RF-006 | Histórico de pagamentos | ✅ | `GET /me/payments` · `/assinatura/pagamentos` |
@@ -103,10 +105,10 @@ Legenda: ✅ implementado (API + Web) · 🟡 parcial · ❌ não implementado �
 | SUB-RF-009 | Listar cortesias | ✅ | Implementado em 2026-10-13: `GET /admin/courtesies` · `/painel/cortesias` |
 | SUB-RF-010 | Revogar cortesia | ✅ | Implementado em 2026-10-13: `POST /admin/courtesies/:id/revoke` · `/painel/cortesias` |
 | SUB-RF-011 | `access_status` | ✅ | Porta `IAccessPolicy` + adapter Drizzle. O cache opcional do CA-4 não foi feito |
-| SUB-RF-012 | Painel financeiro | 🟡 | `/admin/financial/overview` + `/admin/payments` · `/painel/movimentacoes` (com CSV). Bloco de cortesias entregue em 2026-10-13; falta o de cupons |
-| SUB-RF-013 | Cupons (admin) | ❌ | Tabela `coupons` não existe; sem rota e sem tela |
+| SUB-RF-012 | Painel financeiro | ✅ | `/admin/financial/overview` + `/admin/payments` · `/painel/movimentacoes` (com CSV). Cortesias e `discounts_applied_cents` entregues em 2026-10-13 |
+| SUB-RF-013 | Cupons (admin) | ✅ | Implementado em 2026-10-13: `POST/GET /admin/coupons`, `PATCH /admin/coupons/:id` · `/painel/cupons` |
 | SUB-RF-014 | Reembolso | ✅ | `POST /me/payments/:id/refund` · botão no histórico de pagamentos |
-| SUB-RF-015 | Aplicar cupom | ❌ | `coupon_applied` sempre `false` |
+| SUB-RF-015 | Aplicar cupom | ✅ | Implementado em 2026-10-13: `coupon_code` no checkout + prévia `POST /me/checkout/coupon-preview` · campo "Cupom de desconto" em `/planos` |
 
 ## Módulo 7 — Geração por IA (ai-generation.md)
 Retirado de produção em 2026-07-27 (ADR-0039). Nenhum resquício em `api/src` nem em `web/src`. O bot é uma ferramenta local e **síncrona**: não tem jobs, fila nem persistência.
