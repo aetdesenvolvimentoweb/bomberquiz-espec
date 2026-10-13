@@ -168,6 +168,14 @@ Endpoint que recebe notificações do Mercado Pago e atualiza estado interno de 
   Diagnóstico: `bun run mp:webhook-replay --log <arquivo>` (ou `--file <jsonl>`) recalcula o HMAC das notificações já recebidas contra os segredos candidatos (`--secret` aceita um valor avulso do painel, sem tocar no `.env`) e diz se o defeito é do manifest ou do segredo. `MP_WEBHOOK_SECRET` aceita **vários segredos separados por vírgula**, para rotação sem janela de 401.
 - **E-2:** `payments` não encontrado → HTTP 200 com `ignored: "unknown_payment"` e log para investigação (ver CA-8 — respondia 404 até 2026-08-18, o que violava o contrato de entrega do MP e fazia o simulador do painel reportar falha).
 
+### Aditivos de implementação (2026-10-13) — empilhamento
+
+Entraram junto com as cortesias (SUB-RF-008), porque sem eles cortesia e pagamento não convivem direito:
+
+- **CA-2 acumula sobre cortesia também.** Até aqui o pagamento só somava dias em cima de assinatura `paid`; com cortesia vigente, os dois corriam em paralelo e os dias da cortesia se perdiam. Agora a âncora é o maior `end_at` entre as `paid` e `courtesy` ativas. O **trial continua fora** — compra durante o trial conta de agora.
+- **`start_at` = âncora, não `now()`.** A assinatura empilhada nasce com o início onde a de baixo termina. O acesso (SUB-RF-011) só lê `end_at`, então isso não muda quem entra; serve para saber o que está empilhado sobre o quê.
+- **Encerrar algo do meio da pilha recua o que está em cima.** Vale para o reembolso (CA-4 e SUB-RF-014) e para a revogação de cortesia (SUB-RF-010): tudo o que tem `start_at ≥ end_at` da encerrada recua pelos dias que ela deixou de usar. Sem isso, estornar um plano pago com uma cortesia empilhada em cima deixaria o cliente com os dias pagos de brinde. Regra em `api/src/domain/subscriptions/stacking.ts`.
+
 ---
 
 ## SUB-RF-005 — Visualizar status da própria assinatura
@@ -308,6 +316,15 @@ Admin encerra antecipadamente uma cortesia ainda não totalmente consumida. Úti
 - **E-1:** Cortesia já consumida ou já revogada → HTTP 409.
 - **E-2:** Motivo ausente ou abaixo do mínimo → HTTP 422.
 
+### Aditivos de implementação (2026-10-13) — SUB-RF-008 a 010
+
+- **`courtesies` sem `start_at`/`end_at`.** As datas ficam só na `subscriptions` da cortesia (`courtesy_id`, 1:1), que é o que dá acesso. Como o recuo de empilhamento (ver aditivo do SUB-RF-004) mexe nessas datas, uma cópia em `courtesies` teria de acompanhar cada recuo e mais cedo ou mais tarde divergiria. A listagem lê as datas por join. O status (`active`/`expired`/`revoked`) é derivado, não gravado.
+- **Mês civil do limite (SUB-RF-008 CA-3) = horário de Brasília.** Uma cortesia dada às 22h do dia 31 conta para aquele mês. Revogadas contam: o limite é sobre o ato de conceder. Duas concessões simultâneas do mesmo admin são serializadas por trava na transação, senão as duas leriam a mesma contagem.
+- **Revogação (SUB-RF-010 CA-2) com outra assinatura empilhada depois:** encerra a cortesia e recua o que estava em cima pelos dias que ela não chegou a usar. O cliente fica com exatamente os dias que pagou (CA-3).
+- **SUB-RF-009 CA-3 ("não exibe revogadas antigas"):** não define "antiga". Implementado como: por padrão nenhuma revogada aparece; `include_revoked=true` ou `status=revoked` as mostram.
+- **SUB-RF-009 — `remaining_for_month`/`resets_at`** entram na resposta da listagem: o saldo do limite de quem consulta, para a tela avisar antes de o admin preencher o formulário e tomar um 429.
+- **E-mails (SUB-RF-008 CA-5 / SUB-RF-010 CA-6)** saem depois do commit; falha de envio não desfaz a concessão nem a revogação. O de concessão informa a data final já somada, não "N dias a partir de hoje".
+
 ---
 
 ## SUB-RF-011 — Cálculo de `access_status`
@@ -372,7 +389,7 @@ Visão consolidada de receitas, cortesias e métricas-chave do negócio.
 
 O payload de CA-1 foi escrito antes de existir código de assinaturas. Ao implementar, três ajustes:
 
-**Saíram do contrato — não existem no sistema.** `courtesies`, `discounts_applied_cents` e `users.active_courtesy` dependem das tabelas `courtesies` e `coupons`, que nunca foram criadas (SUB-RF-008/013 seguem fora do MVP). Devolver zeros seria pior que omitir: o admin leria "nenhuma cortesia concedida" onde a verdade é "o sistema não tem cortesias". Voltam junto com as tabelas. `mrr_proxy_cents` e `lapsed_last_30d` também saíram — números derivados que exigiriam definição própria e não foram pedidos.
+**Saíram do contrato — não existem no sistema.** `courtesies`, `discounts_applied_cents` e `users.active_courtesy` dependem das tabelas `courtesies` e `coupons`, que nunca foram criadas (SUB-RF-008/013 seguem fora do MVP). *(2026-10-13: `courtesies` e `users.active_courtesy` voltaram com a tabela. `courtesies` traz `granted_count`, `total_days_granted` e `by_category` pela data da concessão no período, revogadas depois incluídas, como a receita inclui os estornados. `active_count` é contado no instante da consulta. Só `discounts_applied_cents` segue fora.)* Devolver zeros seria pior que omitir: o admin leria "nenhuma cortesia concedida" onde a verdade é "o sistema não tem cortesias". Voltam junto com as tabelas. `mrr_proxy_cents` e `lapsed_last_30d` também saíram — números derivados que exigiriam definição própria e não foram pedidos.
 
 **Entraram — taxa e líquido reais.** `fee_cents`, `received_cents` e `fee_unknown_count`. A spec original não os previa porque, quando foi escrita, não se sabia se o Mercado Pago os expunha; uma sondagem contra a conta de produção mostrou que sim, por um caminho não óbvio (ADR-0041). `fee_unknown_count` é a contagem de pagamentos do período ainda sem taxa conhecida: enquanto for maior que zero, taxa e líquido estão **incompletos**, e a UI diz isso — um líquido inflado com cara de número fechado é o pior defeito possível num painel financeiro.
 
