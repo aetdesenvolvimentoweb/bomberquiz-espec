@@ -80,7 +80,7 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 | POST | `/auth/reactivate` | público | PROF-RF-008 | Reativa conta `inactive` com e-mail + senha e já emite a sessão (resposta igual à do login). Inexistente, excluída ou senha errada → 401 `invalid_credentials`; conta já ativa → equivale a um login. Mesmo rate limit do login |
 | DELETE | `/me` | sessão | PROF-RF-009 | Exclusão LGPD (anonimização; reautenticação) |
 | GET | `/admin/users` | admin | PROF-RF-011 | Busca/lista usuários (filtros `email`, `name`, `role`, `status`) |
-| GET | `/admin/users/:id` | admin | PROF-RF-014 | ❌ **não implementado** (conferência 2026-10-01) — Detalhe de usuário + resumo financeiro |
+| GET | `/admin/users/:id` | admin | PROF-RF-014 | Detalhe de usuário: campos da listagem + `contract` (`access`, `recent_subscriptions` — últimas 5, `courtesies_received_this_year`). Sem telefone/DOB/sexo; `deleted` ou inexistente → 404 `user_not_found` |
 | PATCH | `/admin/users/:id/role` | admin | PROF-RF-012/013 | Promove a parceiro (`role=partner`) / revoga parceiro (`role=client`, `reason?`) |
 
 ### Módulo 3 — Conteúdo admin (`content-admin.md`)

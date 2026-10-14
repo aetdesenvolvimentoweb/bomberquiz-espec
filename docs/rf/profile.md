@@ -330,6 +330,12 @@ Tela de detalhe acessada a partir da listagem (PROF-RF-011). Reúne, em um únic
 - **E-1:** Acesso de não-admin → HTTP 403.
 - **E-2:** Usuário não encontrado ou `deleted` → HTTP 404.
 
+### Aditivos de implementação (2026-10-13) — PROF-RF-014
+- **Bloco de contrato (CA-1/CA-2):** `contract.access` = `{ status, active_until, source }` (o mesmo cálculo de SUB-RF-011); `contract.recent_subscriptions[]` = `{ id, source, plan_name, status, start_at, end_at, courtesy_category }`, as 5 mais recentes por início, incluindo trial; `contract.courtesies_received_this_year` (número).
+- **Situação derivada:** uma assinatura `active` cujo fim já passou sai como `expired`, mesmo antes do job diário virá-la.
+- **"Cortesias recebidas no ano vigente":** ano civil de Brasília (1º de janeiro 00:00, UTC-3), contado pela data de concessão. Revogadas também contam — é o histórico do que o usuário recebeu.
+- **Tela:** `/painel/usuarios/:id`, aberta pelo nome na listagem. Além do resumo, traz as ações que ele ajuda a decidir: tornar/revogar parceiro (mesmas regras da listagem) e conceder cortesia (só conta ativa, com o e-mail já preenchido).
+
 ---
 
 ## Pendências deste módulo — resolvidas em 2026-05-28

@@ -6,13 +6,13 @@ Pedido: comparar os 85 RFs de `requisitos/docs/rf/*.md` com o que realmente exis
 Legenda: ✅ implementado (API + Web) · 🟡 parcial · ❌ não implementado · 🗑️ removido de api/web (ver coluna Bot)
 
 ## Resumo
-Contagem atualizada em 2026-10-13, depois de parceiros (PROF-RF-011 a 013), cortesias, cupons e desativar/reativar conta (PROF-RF-007/008). Em 2026-10-01 era 61 / 4 / 11 / 9.
+Contagem atualizada em 2026-10-13, depois de parceiros (PROF-RF-011 a 013), cortesias, cupons, desativar/reativar conta (PROF-RF-007/008) e detalhe de usuário (PROF-RF-014). Em 2026-10-01 era 61 / 4 / 11 / 9.
 
 | Situação | Qtde |
 |---|---|
-| ✅ Implementado | 72 |
+| ✅ Implementado | 73 |
 | 🟡 Parcial | 2 |
-| ❌ Não implementado | 2 |
+| ❌ Não implementado | 1 |
 | 🗑️ Removido (Módulo 7, coberto parcialmente pelo bot) | 9 |
 | **Total** | **85** |
 
@@ -47,7 +47,7 @@ Contagem atualizada em 2026-10-13, depois de parceiros (PROF-RF-011 a 013), cort
 | PROF-RF-011 | Buscar/listar usuários (admin) | ✅ (2026-10-13) | `GET /admin/users` · `/painel/usuarios` |
 | PROF-RF-012 | Promover a Parceiro | ✅ (2026-10-13) | `PATCH /admin/users/:id/role` com `role=partner` · `/painel/usuarios` |
 | PROF-RF-013 | Revogar Parceiro | ✅ (2026-10-13) | `PATCH /admin/users/:id/role` com `role=client` · `/painel/usuarios` |
-| PROF-RF-014 | Detalhe de usuário (admin) | ❌ | Sem `/admin/users/:id` |
+| PROF-RF-014 | Detalhe de usuário (admin) | ✅ | 2026-10-13: `GET /admin/users/:id` com o bloco `contract` (acesso, últimas 5 assinaturas, cortesias do ano) e tela `/painel/usuarios/:id` com as ações de papel e cortesia |
 
 ## Módulo 3 — Conteúdo admin (content-admin.md)
 | RF | Título | Situação | Evidência / observação |
