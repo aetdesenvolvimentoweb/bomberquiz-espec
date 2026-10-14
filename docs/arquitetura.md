@@ -272,7 +272,7 @@ Scheduler **in-process** no backend (ADR-0017). Cada job é um caso de uso em `a
 | Recalcular dificuldade das perguntas | diário 00:00 | CONT-RF-017 | ✅ implementado (2026-10-01). Recalcula contadores e nível de toda `published` (`very_easy`…`very_hard`) do zero, numa transação. Cron em `QUESTION_DIFFICULTY_JOB_CRON`; disparo manual com `bun run recompute:question-difficulty`. |
 | Lembretes de expiração de assinatura | diário 09:00 | SUB-RF-007 | ✅ implementado (2026-08-26). E-mails D-7/D-3/D-1 e e-mail final D-0; um por marco. **Também fecha as assinaturas vencidas** (`active` → `expired`), transição que nenhuma outra parte do sistema fazia. Idempotência via `subscription_reminders`, chaveada por (usuário, marco, `end_at` alvo) — não por `subscription_id`, que duplicaria e-mail para quem acumulou dias em duas compras. |
 | Expiração e auto-abandono de quiz | a cada 5 min | QUIZ-RF-004 | `expired` por cronômetro; `abandoned` após 24h sem atividade. |
-| Purga de sessões inativas | diário (ex. 03:00) | AUTH-RF-008 | Remove sessões com >7 dias sem uso. |
+| Purga de sessões inativas | diário às 03:00 (`SESSION_PURGE_JOB_CRON`) | AUTH-RF-008 | Remove sessões com `expires_at` no passado (>7 dias sem uso), inclusive as `session_replaced`. |
 | Dump lógico do banco | diário (ex. 04:00) | ADR-0020 | `pg_dump` → Cloudflare R2 (retenção rotativa). |
 
 **Premissa de instância única:** com >1 instância, jobs rodariam em duplicidade — a migração será lock distribuído (`pg_advisory_lock`) ou Fly scheduled machines, localizada em `infra/scheduler/` (mesma premissa do rate limit in-memory).

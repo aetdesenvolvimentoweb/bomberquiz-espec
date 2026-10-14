@@ -6,12 +6,12 @@ Pedido: comparar os 85 RFs de `requisitos/docs/rf/*.md` com o que realmente exis
 Legenda: ✅ implementado (API + Web) · 🟡 parcial · ❌ não implementado · 🗑️ removido de api/web (ver coluna Bot)
 
 ## Resumo
-Contagem atualizada em 2026-10-13, depois de parceiros (PROF-RF-011 a 013), cortesias, cupons, desativar/reativar conta (PROF-RF-007/008) e detalhe de usuário (PROF-RF-014). Em 2026-10-01 era 61 / 4 / 11 / 9.
+Contagem atualizada em 2026-10-14, depois de parceiros (PROF-RF-011 a 013), cortesias, cupons, desativar/reativar conta (PROF-RF-007/008), detalhe de usuário (PROF-RF-014) e purga de sessões (AUTH-RF-008). Em 2026-10-01 era 61 / 4 / 11 / 9.
 
 | Situação | Qtde |
 |---|---|
-| ✅ Implementado | 73 |
-| 🟡 Parcial | 2 |
+| ✅ Implementado | 74 |
+| 🟡 Parcial | 1 |
 | ❌ Não implementado | 1 |
 | 🗑️ Removido (Módulo 7, coberto parcialmente pelo bot) | 9 |
 | **Total** | **85** |
@@ -26,8 +26,8 @@ Contagem atualizada em 2026-10-13, depois de parceiros (PROF-RF-011 a 013), cort
 | AUTH-RF-005 | Logout | ✅ | `POST /auth/logout` · nav-shell |
 | AUTH-RF-006 | Solicitar recuperação | ✅ | `POST /auth/forgot-password` · `/esqueci-senha` |
 | AUTH-RF-007 | Redefinir senha | ✅ | `POST /auth/reset-password` · `/redefinir-senha` |
-| AUTH-RF-008 | Sessão e expiração | 🟡 | 7 dias deslizantes, sessão única e `GET /me` ok. **Falta o job de limpeza de sessões (CA-3)** — os docs já registram como pendente |
-| AUTH-RF-009 | Rate limiting | ✅ | Bloqueio exponencial por (IP, e-mail) + limites de cadastro, recuperação e reenvio. Ressalva: CA-3 pede o limite **por e-mail**, mas o código limita **por IP** |
+| AUTH-RF-008 | Sessão e expiração | ✅ | 7 dias deslizantes, sessão única e `GET /me` ok. Job `session-purge` diário às 03:00 (CA-3, implementado em 2026-10-14) |
+| AUTH-RF-009 | Rate limiting | ✅ | Bloqueio exponencial por (IP, e-mail) + limites de cadastro, recuperação e reenvio. Recuperação e reenvio: 3/h por e-mail + teto de 10/h por IP desde 2026-10-14 (ADR-0047) |
 | AUTH-RF-010 | Promoção por whitelist | ✅ | Hook em `better-auth.ts` + `config/admin-whitelist.ts` |
 | AUTH-RF-011 | Consentimento LGPD | ✅ | `consent_version` no cadastro · `/termos`, `/privacidade` |
 
@@ -128,7 +128,7 @@ Retirado de produção em 2026-07-27 (ADR-0039). Nenhum resquício em `api/src` 
 1. `requisitos/CLAUDE.md` diz que **painel financeiro e admin de planos** estão fora do MVP, mas os dois foram implementados (API e web).
 2. `api.md` lista como se existissem `/me/avatar`, `/auth/reactivate`, `/admin/users*`, `/admin/courtesies*` e `/admin/coupons*`, sem avisar que não foram implementados. `/admin/financial/overview` também aparece duas vezes.
 3. PROF-RF-007/008 constam como entregues no bootstrap do web (tarefas.md, 2026-07-07), mas a reativação ficou "fora de escopo por falta de endpoint" e não voltou a ser registrada como pendência. **Isso é um bug funcional, não só uma lacuna de documentação.** (Corrigido em 2026-10-13.)
-4. AUTH-RF-009 CA-3 pede o limite por e-mail; o código limita por IP.
+4. AUTH-RF-009 CA-3 pede o limite por e-mail; o código limitava por IP. (Corrigido em 2026-10-14: por e-mail + teto por IP, ADR-0047.)
 
 ## Próximo passo (após aprovação)
 Só se o usuário quiser, registrar essas pendências e divergências em `requisitos/docs/tarefas.md` (seção "A realizar") e marcar as rotas não implementadas em `requisitos/docs/api.md`. Nenhuma alteração de código está prevista nesta conferência.

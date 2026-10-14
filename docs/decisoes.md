@@ -421,3 +421,18 @@ A ponte entre os dois mundos é o `external_reference` — gravamos nele o id da
 - No TAP, o fatiamento não olha o estoque de cada eixo. Um eixo sem perguntas difíceis completa a sua fatia com o vizinho mais próximo, mesmo que outro eixo tivesse difíceis sobrando. Esse desvio é aceitável e simplifica o algoritmo.
 - O filtro opcional do cliente ("só difíceis", QUIZ-P-05) continua adiado.
 - A curva é um ponto de partida; pode ser ajustada quando houver volume real por nível.
+
+## 0047 — Limite de reenvio de verificação e de recuperação de senha: por e-mail + teto por IP (2026-10-14)
+
+**Contexto:** AUTH-RF-009 CA-3 pede "3/hora por e-mail" para o reenvio de verificação e a recuperação de senha, mas o código limitava 3/hora **por IP**. Na conferência de 2026-10-01 isso ficou como divergência a decidir. Só por IP, um e-mail alvo de spam pode ser bombardeado de vários IPs, e quem divide IP (NAT de quartel, 4G) trava o colega no terceiro pedido. Só por e-mail, um bot que troca o endereço a cada pedido não é segurado e consome a cota do Resend.
+
+**Decisão:**
+1. **3 pedidos/h por e-mail**, com contador separado por fluxo (`forgot:` e `resend:`), como pede o RF. O e-mail é normalizado com `trim().toLowerCase()`, sem tirar o `+alias`.
+2. **Teto de 10 pedidos/h por IP** nas duas rotas, o mesmo do cadastro.
+3. O limite por e-mail é checado no handler, depois da validação do corpo (`consumeRateLimit` em `rate-limit.middleware.ts`); o por IP continua no middleware. Os dois respondem 429 com `Retry-After`.
+4. O contador conta por endereço, exista a conta ou não, então o 429 não revela cadastro (anti-enumeração preservada).
+
+**Consequências:**
+- Como os demais limites, fica em memória por instância (ADR-0017). Com mais de uma instância, cada uma conta separado.
+- Variações com `+alias` contam como endereços diferentes. O teto por IP limita esse abuso.
+- No web, o 429 dessas duas telas mostra "Muitas solicitações para este e-mail. Aguarde um pouco antes de tentar de novo."

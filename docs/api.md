@@ -57,10 +57,10 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 |---|---|---|---|---|
 | POST | `/auth/register` | público | AUTH-RF-001 | Cadastro (cria `client`, dispara verificação) |
 | GET/POST | `/auth/verify-email` | público | AUTH-RF-002 | Verifica e-mail via token (uso único, 24h) |
-| POST | `/auth/resend-verification` | público | AUTH-RF-003 | Reenvia verificação (resposta sempre genérica) |
+| POST | `/auth/resend-verification` | público | AUTH-RF-003 | Reenvia verificação (resposta sempre genérica); 3/h por e-mail + 10/h por IP (ADR-0047) |
 | POST | `/auth/login` | público | AUTH-RF-004 | Login; avalia promoção admin (AUTH-RF-010). Conta `inactive` com a senha certa → 403 `account_inactive` (PROF-RF-007 CA-3); com a senha errada, o 401 de sempre |
 | POST | `/auth/logout` | sessão | AUTH-RF-005 | Encerra a sessão (idempotente) |
-| POST | `/auth/forgot-password` | público | AUTH-RF-006 | Solicita recuperação (token 1h) |
+| POST | `/auth/forgot-password` | público | AUTH-RF-006 | Solicita recuperação (token 1h); 3/h por e-mail + 10/h por IP (ADR-0047) |
 | POST | `/auth/reset-password` | público | AUTH-RF-007 | Redefine senha com token; invalida sessões |
 | GET | `/me` | sessão | AUTH-RF-008, PROF-RF-006 | Hidrata usuário corrente; flag `requires_consent_renewal` |
 

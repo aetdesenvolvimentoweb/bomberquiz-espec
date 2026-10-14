@@ -190,7 +190,7 @@ Política de duração e renovação de sessão.
 **Critérios de aceitação:**
 - **CA-1:** Sessão dura 7 dias a partir da última atividade (sliding expiration).
 - **CA-2:** Cada request autenticada atualiza o `last_seen_at` da sessão (no máximo 1× por minuto, para evitar write amplification).
-- **CA-3:** Sessão inativa por >7 dias é purgada por job periódico.
+- **CA-3:** Sessão inativa por >7 dias é purgada por job periódico. *(Implementado em 2026-10-14: job `session-purge`, diário às 03:00 (`SESSION_PURGE_JOB_CRON`), apaga as sessões com `expires_at` no passado. O Better-Auth desliza `expires_at` a cada uso, então isso é ">7 dias sem uso", com até 24h de folga do `updateAge`. Inclui as marcadas `session_replaced`.)*
 - **CA-4:** **Máximo 1 sessão ativa simultânea por usuário.** Novo login bem-sucedido invalida automaticamente a sessão anterior (ver ADR-0014 e PROF-RF-010 para detalhes do comportamento e da mensagem mostrada ao dispositivo descartado).
 - **CA-5:** Endpoint `GET /me` retorna o usuário corrente a partir da sessão; usado pelo frontend para hidratar estado após reload da PWA.
 
@@ -207,7 +207,7 @@ Proteção contra força bruta e abuso nos endpoints sensíveis: login, cadastro
 **Critérios de aceitação:**
 - **CA-1:** Login: 5 falhas em 15 min por par (IP, e-mail) → lockout exponencial (1min, 5min, 30min, 2h, 24h).
 - **CA-2:** Cadastro: 10 cadastros por hora por IP.
-- **CA-3:** Reenvio de verificação / recuperação de senha: 3/hora por e-mail.
+- **CA-3:** Reenvio de verificação / recuperação de senha: 3/hora por e-mail, mais um teto de 10/hora por IP (ADR-0047).
 - **CA-4:** Resposta HTTP 429 com header `Retry-After`.
 - **CA-5:** Eventos de rate limit ficam em log para análise.
 
