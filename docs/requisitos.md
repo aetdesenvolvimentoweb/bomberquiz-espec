@@ -246,7 +246,7 @@ O **inventário consolidado de endpoints** (todos os módulos) e as convenções
 - ✅ Comportamento de quiz abandonado vs. finalizado/expirado → assimetria intencional: `finished`/`expired` contam não-respondidas como erro; `abandoned` preserva apenas o que foi efetivamente respondido. Auto-abandono após 24h sem atividade. QUIZ-RF-001 CA-6 / QUIZ-RF-004 CA-4.
 - ✅ Evolução temporal do desempenho próprio → endpoint mensal (`/me/performance/timeline`), sem leaderboard entre clientes. QUIZ-RF-010.
 - ✅ Duração do período gratuito → **7 dias** corridos a partir da verificação de e-mail. Único por usuário. SUB-RF-002.
-- ✅ Meios de cobrança no MVP → PIX, saldo Mercado Pago (mesmo preço base) e cartão de crédito (preço +10%, parcelável em até 3×). Sem recorrência automática (cliente renova manualmente após e-mail de lembrete D-7/D-3/D-1). SUB-RF-001, SUB-RF-003, SUB-RF-007.
+- ✅ Meios de cobrança no MVP → PIX e cartão de crédito (preço +10%, parcelável em até 3×). Saldo Mercado Pago constava e foi retirado em 2026-10-14 (ADR-0048). Sem recorrência automática (cliente renova manualmente após e-mail de lembrete D-7/D-3/D-1). SUB-RF-001, SUB-RF-003, SUB-RF-007.
 - ✅ Cortesia de assinatura: revogação e limites → admin pode revogar cortesia não consumida (com motivo obrigatório); limite de **10 cortesias/mês civil por admin**. SUB-RF-008/010. Termo "doação" foi renomeado para "cortesia" em toda a documentação.
 - ✅ Equivalência "questões cadastradas ↔ tempo de assinatura" → **sem regra automática no MVP** — admin observa o trabalho e doa manualmente. SUB-P-02.
 

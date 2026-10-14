@@ -6,12 +6,12 @@ Pedido: comparar os 85 RFs de `requisitos/docs/rf/*.md` com o que realmente exis
 Legenda: ✅ implementado (API + Web) · 🟡 parcial · ❌ não implementado · 🗑️ removido de api/web (ver coluna Bot)
 
 ## Resumo
-Contagem atualizada em 2026-10-14, depois de parceiros (PROF-RF-011 a 013), cortesias, cupons, desativar/reativar conta (PROF-RF-007/008), detalhe de usuário (PROF-RF-014) e purga de sessões (AUTH-RF-008). Em 2026-10-01 era 61 / 4 / 11 / 9.
+Contagem atualizada em 2026-10-14, depois de parceiros (PROF-RF-011 a 013), cortesias, cupons, desativar/reativar conta (PROF-RF-007/008), detalhe de usuário (PROF-RF-014), purga de sessões (AUTH-RF-008) e retirada do saldo Mercado Pago (SUB-RF-003, ADR-0048). Em 2026-10-01 era 61 / 4 / 11 / 9.
 
 | Situação | Qtde |
 |---|---|
-| ✅ Implementado | 74 |
-| 🟡 Parcial | 1 |
+| ✅ Implementado | 75 |
+| 🟡 Parcial | 0 |
 | ❌ Não implementado | 1 |
 | 🗑️ Removido (Módulo 7, coberto parcialmente pelo bot) | 9 |
 | **Total** | **85** |
@@ -96,7 +96,7 @@ Contagem atualizada em 2026-10-14, depois de parceiros (PROF-RF-011 a 013), cort
 |---|---|---|---|
 | SUB-RF-001 | Planos (público + admin) | ✅ | `GET /plans`, `GET/PATCH /admin/plans` · `/planos`, `/painel/planos` |
 | SUB-RF-002 | Trial automático | ✅ | `StartTrialUseCase` disparado no hook de verificação do Better-Auth |
-| SUB-RF-003 | Checkout | 🟡 | PIX e cartão funcionam, com cupom desde 2026-10-13. **Saldo Mercado Pago** responde 422 `method_not_supported_yet` |
+| SUB-RF-003 | Checkout | ✅ | PIX e cartão funcionam, com cupom desde 2026-10-13. Saldo Mercado Pago retirado da especificação em 2026-10-14 (ADR-0048) |
 | SUB-RF-004 | Webhook do Mercado Pago | ✅ | `POST /webhooks/mercado-pago` |
 | SUB-RF-005 | Minha assinatura | ✅ | `GET /me/subscription` · `/assinatura` |
 | SUB-RF-006 | Histórico de pagamentos | ✅ | `GET /me/payments` · `/assinatura/pagamentos` |

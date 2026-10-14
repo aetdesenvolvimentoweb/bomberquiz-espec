@@ -21,7 +21,7 @@
 | Duração do trial | **7 dias** corridos, contados a partir da verificação de e-mail (AUTH-RF-002) |
 | Trial é único por usuário | `users.trial_used_at` registra; recadastro com mesmo e-mail anonimizado **não** ganha novo trial |
 | Planos disponíveis | `monthly` (30d), `quarterly` (90d), `semiannual` (180d), `annual` (365d) — exatos em dias civis |
-| Métodos de pagamento | **PIX**, **Saldo Mercado Pago**, **Cartão de crédito** |
+| Métodos de pagamento | **PIX** (à vista) e **Cartão de crédito** (parcelável). Saldo em conta Mercado Pago foi retirado em 2026-10-14 (ADR-0048) |
 | Diferencial de preço cartão | **+10% sobre o preço PIX** (precificação automática a partir do `pix_price` configurado pelo admin) |
 | Parcelamento no cartão | até **3×** sem juros adicionais (custo de parcelamento já embutido no +10%) |
 | Recorrência automática | **não** no MVP — todo pagamento cobre o período integral; renovação é ato manual do cliente |
@@ -43,7 +43,7 @@
 - `id`, `user_id`, `plan_id?` (null para cortesia), `source` (`paid`/`courtesy`/`trial`), `courtesy_id?`, `payment_id?`, `start_at`, `end_at`, `status`, `created_at`.
 
 ### `payments`
-- `id`, `user_id`, `plan_id`, `method` (`pix`/`mp_balance`/`card`), `gross_amount` (centavos antes do cupom), `discount_amount` (centavos), `net_amount` (centavos efetivamente cobrados), `coupon_id?`, `installments`, `mp_payment_id`, `mp_status`, `status`, `paid_at?`, `refunded_at?`, `failure_reason?`, `created_at`, `updated_at`.
+- `id`, `user_id`, `plan_id`, `method` (`pix`/`card`), `gross_amount` (centavos antes do cupom), `discount_amount` (centavos), `net_amount` (centavos efetivamente cobrados), `coupon_id?`, `installments`, `mp_payment_id`, `mp_status`, `status`, `paid_at?`, `refunded_at?`, `failure_reason?`, `created_at`, `updated_at`.
 
 ### `courtesies`
 - `id`, `beneficiary_user_id`, `granted_by_admin_id`, `days_granted`, `start_at`, `end_at`, `category` (`parceria`/`demonstracao`), `notes?`, `revoked_at?`, `revoked_by_admin_id?`, `revocation_reason?`, `created_at`.
@@ -111,7 +111,7 @@ No momento em que o cliente verifica o e-mail, sistema cria uma `subscription` d
 Cliente escolhe plano e método de pagamento (opcionalmente aplica cupom). Sistema cria registro de `payments` em estado `pending` e devolve dados/QR code do Mercado Pago para conclusão.
 
 **Critérios de aceitação:**
-- **CA-1:** `POST /me/checkout` com `{ plan_slug, method: "pix" | "mp_balance" | "card", installments?: 1..3, coupon_code?: string }`.
+- **CA-1:** `POST /me/checkout` com `{ plan_slug, method: "pix" | "card", installments?: 1..3, coupon_code?: string }`. *(Até 2026-10-14 o método `mp_balance` também constava; foi retirado pela ADR-0048 e hoje responde 422 `validation_error`.)*
 - **CA-2:** Validações:
   - `plan_slug` ∈ planos `is_active=true`.
   - `method=card` aceita `installments ∈ 1..max_installments`; demais métodos ignoram esse campo (1 implícito).
@@ -119,10 +119,10 @@ Cliente escolhe plano e método de pagamento (opcionalmente aplica cupom). Siste
 - **CA-3:** **Cupom (opcional):** se `coupon_code` informado, sistema valida via SUB-RF-015. Cupom inválido **não bloqueia** o checkout — retorna `coupon_applied=false` no payload; cupom válido reduz `net_amount` e incrementa `used_count`.
   **Aditivo de implementação (2026-10-13) — cupom inválido passa a bloquear.** O formulário de cartão do Mercado Pago mostra valor e parcelas antes de o cliente pagar, então o desconto precisa ser conhecido antes do checkout. Entrou a prévia `POST /me/checkout/coupon-preview` (botão "Aplicar" em `/planos`), que responde `{ valid, gross_amount, discount_amount, net_amount }` com as mesmas regras do checkout. Com o desconto já mostrado, seguir sem ele e cobrar o preço cheio em silêncio (no cartão, na hora) seria pior que recusar: cupom que deixou de valer entre a prévia e o pagamento responde **422 `coupon_invalid`**, sem criar pagamento, e a tela tira o cupom e pede para tentar de novo. O incremento de `used_count` acontece na confirmação (SUB-RF-015 CA-5), não aqui.
 - **CA-4:** Sistema cria registro em `payments` com `status=pending`, `gross_amount`, `discount_amount`, `net_amount`, `coupon_id?`. Gera `mp_payment_id` chamando a API do Mercado Pago **com o `net_amount`**. Resposta HTTP 201, discriminada por `method`:
-  - Para `pix` / `mp_balance`: `{ method: "pix", payment_id, qr_code_base64, qr_code_text, expires_at, gross_amount, discount_amount, net_amount, coupon_applied }`.
+  - Para `pix`: `{ method: "pix", payment_id, qr_code_base64, qr_code_text, expires_at, gross_amount, discount_amount, net_amount, coupon_applied }`.
   - Para `card` — **contrato revisado em 2026-08-26 (ADR-0040)**: o request leva `card_token`, `payment_method_id`, `device_id` e `installments`, gerados no navegador pelo MercadoPago.js V2 / Card Payment Brick; a resposta é `{ method: "card", payment_id, order_status, payment_status, status_detail, installments, gross_amount, discount_amount, net_amount, coupon_applied }`. **Não existe `checkout_url`** — a especificação original descrevia Checkout Pro (fluxo hospedado com redirect), descartado em favor do Checkout Transparente sobre a mesma API de Orders do PIX. O princípio do CA-4 original é preservado: nenhum dado do cartão passa pelo backend, só o token de uso único.
   - **A assinatura NÃO nasce no checkout**, nem no cartão (que é síncrono): o único caminho que cria assinatura continua sendo o webhook (SUB-RF-004), já idempotente e validado em produção. O cliente confirma o acesso por `GET /me/subscription`, como no PIX.
-  - `mp_balance` continua sem implementação (retorna 422 `method_not_supported_yet`) — é fluxo hospedado, e reabriria a complexidade de conta de teste "compradora" que a ADR-0040 evita.
+  - Saldo em conta Mercado Pago (`mp_balance`) **foi retirado** (ADR-0048): o MP só o aceita pelo fluxo hospedado (Checkout Pro), um segundo caminho que a ADR-0040 evita. PIX cobre o pagamento à vista e o cartão, o parcelado.
 - **CA-5:** Cliente que tem **assinatura `paid` ativa** pode iniciar novo checkout — o pagamento futuro **estende** a assinatura quando confirmado (CA aplicada em SUB-RF-004).
 - **CA-6:** Rate limit: 5 checkouts pendentes simultâneos por cliente; o 6º falha com instrução para concluir os anteriores ou esperar expiração.
 
