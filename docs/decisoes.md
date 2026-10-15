@@ -139,6 +139,8 @@ Todas acessadas via **portas** definidas em `application/` ou `domain/`, impleme
 
 **Consequências:** Avatares ficam responsivos e otimizados sem código de redimensionamento próprio. Adiciona um terceiro provedor de storage (R2 para questões, Cloudinary para avatares), mas com escopo claro de uso para cada. Migração para um único provedor no futuro é localizada na camada `infra/`.
 
+**Nota (2026-10-15, implementação de PROF-RF-005):** O recorte quadrado acontece **no navegador** (`react-easy-crop`), que também reduz a foto para 512×512 antes do upload — o cliente escolhe o enquadramento, e a foto de celular cabe no limite de 2 MB. O Cloudinary fica com a entrega por tamanho/formato (`c_fill,w,h,f_auto,q_auto` na URL). A porta é `IAvatarStoragePort`, o mesmo `CloudinaryAdapter` das perguntas, instanciado com a pasta `bomberquiz/users`.
+
 ## 0014 — Política de sessão única (2026-05-28)
 
 **Contexto:** O cliente pediu comportamento "estilo Netflix" para desincentivar compartilhamento de conta (uma assinatura, um usuário ativo por vez). A modelagem original em AUTH-RF-008 CA-4 e AUTH-RF-005 CA-2 permitia múltiplas sessões simultâneas em vários dispositivos.

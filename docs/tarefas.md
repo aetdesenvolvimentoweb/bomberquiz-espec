@@ -34,7 +34,7 @@
 
 - [ ] **Conferência de RFs × código real (2026-10-01)** — tabela completa em [`conferencia-rfs-2026-10-01.md`](conferencia-rfs-2026-10-01.md). os 85 RFs foram verificados contra `api/`, `web/` e `bot/`, sem confiar no status declarado nos docs. Resultado: 61 implementados, 4 parciais, 11 não implementados e 9 do Módulo 7 removidos (ADR-0039; o `ai-bot` cobre parte). Pendências encontradas:
   - [x] 2026-10-13 — **🐞 Bug PROF-RF-007 CA-3 + PROF-RF-008 — Desativar/reativar conta:** o login de conta `inactive` agora responde 403 `account_inactive`, só depois de conferir a senha (senha errada continua 401, sem revelar o estado). Nova rota `POST /auth/reactivate` (`{ email, password }`): volta a conta a `active`, limpa `deactivated_at` e emite a sessão pelo mesmo caminho do login (handler compartilhado `respondWithSession`, mesmo rate limit). Inexistente, excluída ou senha errada → 401 genérico, em vez do 404 da E-1 (aditivo em `rf/profile.md`). No web, a tela de login troca o formulário por "Sua conta está desativada. Deseja reativar?" e reenvia o e-mail e a senha já digitados. Migration de dados `0027_revoke_inactive_sessions` encerra as sessões de quem já estava `inactive` e voltou a entrar pelo bug. **Deploy:** `bun run db:migrate` (0025 + 0026 + 0027) antes da API.
-  - [ ] **PROF-RF-005 — Avatar:** não existem `POST/DELETE /me/avatar` nem tela; `avatarUrl` é sempre `null`.
+  - [x] 2026-10-15 — **PROF-RF-005 — Avatar:** feito; detalhes na entrada de 2026-10-15 em "Concluído".
   - [x] 2026-10-13 — **PROF-RF-011 a 013 — Gestão de parceiros pelo admin:** `GET /admin/users` (filtros e-mail/nome/papel/status, `deleted` só sob pedido) e `PATCH /admin/users/:id/role` (`partner` promove cliente ativo, `client` revoga parceiro; 409 para transição inválida ou conta não ativa; audit `promote_partner`/`revoke_partner`). Tela `/painel/usuarios`. O novo papel vale em até 60s (cookieCache da sessão). Testes de integração/e2e passam no CI (deploy de `e2ca30e`) e num container Linux; localmente no Windows o Bun trava em `expect().rejects` com banco, não é defeito do código.
   - [x] 2026-10-13 — **PROF-RF-014 — Detalhe de usuário (admin):** `GET /admin/users/:id` devolve os campos da listagem mais o bloco `contract`: acesso atual (reusa o `IAccessPolicy` de SUB-RF-011), as 5 assinaturas mais recentes com plano ou categoria da cortesia (`active` vencida sai como `expired`) e as cortesias recebidas no ano civil de Brasília, revogadas incluídas. Leitura em porta segregada (`IUserContractSummaryQuery`). `deleted` ou inexistente → 404. Tela `/painel/usuarios/:id`, aberta pelo nome na listagem, com as ações de papel (diálogo extraído para `change-role-dialog.tsx`, compartilhado com a listagem) e "Conceder cortesia" com o e-mail já preenchido. Sem migration.
   - [x] 2026-10-14 — **AUTH-RF-008 CA-3 — Purga de sessões:** job `session-purge` (`PurgeExpiredSessionsUseCase` + `ISessionRepository.deleteExpired`), diário às 03:00 (`SESSION_PURGE_JOB_CRON`). Apaga as sessões com `expires_at` no passado, inclusive as `session_replaced`; como o Better-Auth desliza `expires_at` a cada uso, isso é ">7 dias sem uso". Sem migration.
@@ -786,6 +786,28 @@
     - Navegador real com a API de dev, com o suporte redirecionado para `@resend.dev`: contestar no quiz pelo celular, ver no painel, contador no menu e resolver.
   - **Pergunta fora de circulação (CA-12, pedido do usuário):** pergunta arquivada, ou com matéria ou eixo arquivados (ex.: mudança de edital), não pode ser contestada → 409 `question_not_in_circulation`. O resultado do quiz traz `reportable` por questão, e a revisão esconde o link nessas. Mesmo critério do sorteio (`filterInCirculation` no repositório de perguntas).
   - **Fora do escopo:** o parceiro não é avisado quando a análise termina (o selo some sozinho); não há aviso no app para o cliente, só o e-mail.
+
+- [x] 2026-10-15 — **Avatar do usuário** (PROF-RF-005, nota no ADR-0013; `api` + `web`).
+  - **Decisões do usuário:** recorte no navegador; a foto aparece só no menu, no perfil e no detalhe de usuário do admin (na fila de contestações continua só o nome).
+  - **API:**
+    - `CloudinaryAdapter` recebe a pasta (`bomberquiz/questions` por padrão, `bomberquiz/users` para avatar); `IAvatarStoragePort`.
+    - `UploadAvatarUseCase` (2 MB, MIME real, apaga a antiga depois de gravar a nova) e `RemoveAvatarUseCase` (idempotente).
+    - `POST /me/avatar` (multipart, 10/h com contador próprio — `rateLimitByUser` dividiria a chave `user:<id>` com o upload de imagem de pergunta) e `DELETE /me/avatar`, ambos respondendo `{ user }`.
+    - Exclusão de conta (PROF-RF-009 CA-3) passa a apagar a foto no Cloudinary.
+    - `avatar_url` no detalhe de usuário do admin.
+    - Sem migration (o campo `users.image` já existia).
+  - **Web:**
+    - `UserAvatar` (foto ou iniciais, volta às iniciais se a imagem falhar; pede ao Cloudinary a variante no tamanho exibido).
+    - `AvatarEditor` no topo de `/perfil`: "Adicionar/Trocar foto" → recorte redondo com zoom → `cropToAvatarBlob` (512×512 WebP, JPEG de reserva) → upload. "Remover" volta às iniciais. A sessão é atualizada com a resposta, então o menu troca a foto na hora.
+    - Menu (botão da conta e drawer mobile) e `/painel/usuarios/:id`.
+    - Dependência nova: `react-easy-crop`.
+  - **Testes:**
+    - API: unit **360** (10 novos: `avatar.usecases` e a foto na exclusão de conta); integração **247/247**; e2e **254/254** (6 novos em `me-avatar.test.ts`). Os dois últimos no contêiner Linux.
+    - Web: typecheck limpo, **239** testes (8 novos em `avatar-editor.test.tsx`).
+    - Navegador real (desktop e 390 px), com `/me/avatar` simulado no Playwright: o recorte sobe como WebP de ~27 KB; foto no perfil, no botão da conta e no drawer; "Remover" volta às iniciais. O erro 502 também foi visto de verdade (toast, recorte continua aberto).
+  - **Ajuste em `ui/slider.tsx`:** o `aria-label` passa a ir no thumb (o elemento com papel `slider` no Radix); antes o controle de zoom ficava sem nome acessível.
+  - **Pendência de ambiente:** o `.env` de dev tem credenciais fictícias do Cloudinary (`CLOUDINARY_API_KEY=000…`), então upload real (avatar e imagem de pergunta) falha localmente com 502. Para testar ponta a ponta, preencher com uma conta Cloudinary de teste.
+  - **Nota sobre o banco de teste:** rodar a integração sem `--preload ./tests/setup/integration.setup.ts` grava de verdade no banco (o preload é que embrulha cada teste em BEGIN/ROLLBACK). Se isso acontecer, recriar o schema e rodar `test:db:migrate`.
 
 ## Backlog (sem prioridade definida)
 

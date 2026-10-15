@@ -126,6 +126,9 @@ Usuário envia ou remove a própria imagem de avatar. Upload vai para **Cloudina
 - **CA-2:** Upload é feito via porta `AvatarStorage` (ADR-0013), implementada por adapter Cloudinary, na pasta `bomberquiz/users` (mesma convenção de namespacing por projeto usada em `bomberquiz/questions`, ver ADR-0012). Em sucesso, `users.avatar_url` recebe a URL devolvida pelo Cloudinary.
 - **CA-3:** Remoção (`DELETE /me/avatar`) zera `avatar_url`. Frontend volta a renderizar placeholder gerado client-side a partir das iniciais.
 - **CA-4:** Substituição (novo upload sobre avatar existente) tenta deletar a imagem antiga no Cloudinary (best-effort; falha não bloqueia o sucesso da operação — apenas log).
+- **CA-5 (aditivo 2026-10-15):** O web recorta a foto em quadrado (arrastar + zoom) e a reduz para 512×512 (WebP; JPEG se o navegador não gerar WebP) **antes** de enviar. Foto de celular passa dos 2 MB; o recorte fica com dezenas de KB. A API continua validando tamanho e MIME real (CA-1). A exibição pede ao Cloudinary a variante no tamanho da tela (`c_fill,w,h,f_auto,q_auto`).
+- **CA-6 (aditivo 2026-10-15):** Upload limitado a 10 por hora por usuário (contador próprio, separado do limite de imagem de pergunta). Excedido → HTTP 429.
+- **CA-7 (aditivo 2026-10-15):** A foto aparece no menu (botão da conta e drawer mobile), no topo do perfil e no detalhe de usuário do admin (PROF-RF-014, campo `avatar_url`). Não aparece na fila de contestações nem como autor de pergunta (decisão do usuário: agrega pouco).
 
 **Erros previstos:**
 - **E-1:** Tipo de arquivo inválido → HTTP 422.

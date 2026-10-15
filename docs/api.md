@@ -73,14 +73,14 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 | POST | `/me/password` | sessão | PROF-RF-003 | Troca de senha (logado) |
 | POST | `/me/email` | sessão | PROF-RF-004 | Solicita troca de e-mail (confirmação por link) |
 | GET/POST | `/me/email/confirm` | público | PROF-RF-004 | Confirma troca via token; alerta ao e-mail antigo |
-| POST | `/me/avatar` | sessão | PROF-RF-005 | ❌ **não implementado** (conferência 2026-10-01) — Upload de avatar (Cloudinary) — `multipart` |
-| DELETE | `/me/avatar` | sessão | PROF-RF-005 | ❌ **não implementado** (conferência 2026-10-01) — Remove avatar (volta a placeholder) |
+| POST | `/me/avatar` | sessão | PROF-RF-005 | Upload de avatar (Cloudinary, pasta `bomberquiz/users`) — `multipart`, campo `file`, fora do contrato OpenAPI. Responde `{ user }` (mesmo formato de `GET /me/profile`). Sem arquivo → 422 `invalid_file`; MIME real fora de JPEG/PNG/WEBP → 422 `invalid_image_type`; > 2 MB → 413 `image_too_large`; falha no Cloudinary → 502 `image_upload_failed`. 10 envios/h por usuário (contador próprio) → 429 |
+| DELETE | `/me/avatar` | sessão | PROF-RF-005 | Remove o avatar (volta às iniciais) e apaga a imagem no Cloudinary (best-effort). Idempotente. Responde `{ user }` |
 | POST | `/me/consent` | sessão | PROF-RF-006 | Reaceite de termos quando a versão muda |
 | POST | `/me/deactivate` | sessão | PROF-RF-007 | Desativa conta (reversível; reautenticação) |
 | POST | `/auth/reactivate` | público | PROF-RF-008 | Reativa conta `inactive` com e-mail + senha e já emite a sessão (resposta igual à do login). Inexistente, excluída ou senha errada → 401 `invalid_credentials`; conta já ativa → equivale a um login. Mesmo rate limit do login |
 | DELETE | `/me` | sessão | PROF-RF-009 | Exclusão LGPD (anonimização; reautenticação) |
 | GET | `/admin/users` | admin | PROF-RF-011 | Busca/lista usuários (filtros `email`, `name`, `role`, `status`) |
-| GET | `/admin/users/:id` | admin | PROF-RF-014 | Detalhe de usuário: campos da listagem + `contract` (`access`, `recent_subscriptions` — últimas 5, `courtesies_received_this_year`). Sem telefone/DOB/sexo; `deleted` ou inexistente → 404 `user_not_found` |
+| GET | `/admin/users/:id` | admin | PROF-RF-014 | Detalhe de usuário: campos da listagem + `avatar_url` + `contract` (`access`, `recent_subscriptions` — últimas 5, `courtesies_received_this_year`). Sem telefone/DOB/sexo; `deleted` ou inexistente → 404 `user_not_found` |
 | PATCH | `/admin/users/:id/role` | admin | PROF-RF-012/013 | Promove a parceiro (`role=partner`) / revoga parceiro (`role=client`, `reason?`) |
 
 ### Módulo 3 — Conteúdo admin (`content-admin.md`)

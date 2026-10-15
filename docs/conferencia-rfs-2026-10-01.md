@@ -38,7 +38,7 @@ Contagem atualizada em 2026-10-14, depois de parceiros (PROF-RF-011 a 013), cort
 | PROF-RF-002 | Editar dados | ✅ | `PATCH /me/profile` |
 | PROF-RF-003 | Trocar senha | ✅ | `POST /me/password` |
 | PROF-RF-004 | Trocar e-mail | ✅ | `POST /me/email` + `/me/email/confirm` · `/perfil/email/confirmar` |
-| PROF-RF-005 | Avatar | ❌ | Nenhuma rota `/me/avatar` e nenhuma tela. Só existe o campo `avatarUrl`, sempre `null` |
+| PROF-RF-005 | Avatar | ❌ → ✅ 2026-10-15 | Nenhuma rota `/me/avatar` e nenhuma tela. Só existe o campo `avatarUrl`, sempre `null`. **Resolvido em 2026-10-15** (ver `tarefas.md`) |
 | PROF-RF-006 | Reaceite de termos | ✅ | `POST /me/consent` · `/consentimento` |
 | PROF-RF-007 | Desativar conta | ✅ | Corrigido em 2026-10-13: o login de conta `inactive` responde 403 `account_inactive` depois de conferir a senha (antes só barrava `deleted`). A migration 0027 encerra as sessões de contas que já estavam `inactive` |
 | PROF-RF-008 | Reativar conta | ✅ | 2026-10-13: `POST /auth/reactivate` e tela "Sua conta está desativada" no login. 401 genérico em vez do 404 da E-1 (aditivo em `rf/profile.md`) |
