@@ -808,6 +808,7 @@
   - **Ajuste em `ui/slider.tsx`:** o `aria-label` passa a ir no thumb (o elemento com papel `slider` no Radix); antes o controle de zoom ficava sem nome acessível.
   - **Pendência de ambiente:** o `.env` de dev tem credenciais fictícias do Cloudinary (`CLOUDINARY_API_KEY=000…`), então upload real (avatar e imagem de pergunta) falha localmente com 502. Para testar ponta a ponta, preencher com uma conta Cloudinary de teste.
   - **Nota sobre o banco de teste:** rodar a integração sem `--preload ./tests/setup/integration.setup.ts` grava de verdade no banco (o preload é que embrulha cada teste em BEGIN/ROLLBACK). Se isso acontecer, recriar o schema e rodar `test:db:migrate`.
+- [x] 2026-10-15 — **🐞 `/desempenho` estourando a largura no celular** (`web`): o `<select>` nativo de matéria (visão "Por matéria") assume a largura da opção mais longa, e um nome comprido empurrava a página para 449 px numa tela de 390. Agora os selects de eixo e matéria ocupam a linha inteira no celular e têm largura fixa (`sm:w-56`) no desktop, cortando o nome. Conferido no navegador em 390 e 320 px, nas duas visões: nenhum elemento passa da tela.
 
 ## Backlog (sem prioridade definida)
 
