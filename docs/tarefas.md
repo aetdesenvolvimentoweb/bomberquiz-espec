@@ -744,6 +744,39 @@
     - unit **288** (9 novos em `draw.test.ts`);
     - e2e **211/211**;
     - integração nova `start-quiz-difficulty-mix` **2/2**, em arquivo próprio porque o `start-quiz.usecase.test.ts` usa `.rejects` e trava no Windows local.
+- [x] 2026-10-15 — **Retoque visual das telas do cliente** (`web`, só front, sem mudança de API).
+  - **`/inicio`:**
+    - Herói com o mascote: a pose e a frase seguem o estado (novato, último quiz bom ou fraco, acesso bloqueado).
+    - Faixa de 3 números.
+    - Sugestão de treino com a matéria mais fraca e o atalho `/quiz/iniciar?modo=free_subject&materia=<id>`.
+    - Linha "Último quiz".
+    - Saíram os botões de perfil e sair, que repetiam o menu, e a faixa vermelha de bloqueio, porque o herói passou a dar o aviso.
+  - **`/quiz/iniciar`:**
+    - Lê o atalho acima.
+    - Resumo acima do botão: questões, cronômetro e justificativa. O simulado tem o tamanho da soma de `tap_weight`.
+    - Cronômetro e justificativa ficam lembrados em `localStorage` (`bq.quiz.preferences`).
+    - Sem acesso, o aviso com o link para `/planos` aparece no lugar do formulário. Antes, o 402 só aparecia depois do clique.
+  - **`/quiz/:id`:**
+    - Letras A–D nas alternativas, também na revisão do resultado.
+    - O mascote acompanha a explicação.
+    - Confirmação antes de sair (`useBlocker` + `beforeunload`), porque sair perde a sessão do quiz.
+  - **`/historico`:**
+    - Cartões no lugar da tabela de 7 colunas, que no celular rolava para o lado.
+    - No celular, os filtros ficam atrás de "Filtrar (n)".
+    - O % é colorido pelos cortes de `statusBadge`.
+  - **`/desempenho`:**
+    - "Pontos fracos/fortes" subiram para antes dos gráficos, e cada ponto fraco tem um link "Treinar".
+    - O cartão "Zona de risco" virou uma linha discreta no rodapé. O diálogo com senha continua igual.
+  - **Testes:** `web` com typecheck limpo e **223** testes passando.
+  - **Detalhe de teste:** `answer-quiz-page.test.tsx` passou a usar `createMemoryRouter`, porque `useBlocker` exige roteador de dados. O arquivo também faz um stub de `Request` que descarta o `signal`, pela incompatibilidade entre o `AbortSignal` do jsdom e o `Request` do Node.
+- [ ] **Contestação de questão pelo cliente** (nova RF em `rf/quiz.md`; `api` + `web`).
+  - Botão "Reportar problema" na questão durante o quiz e na revisão do resultado.
+  - Motivo (enunciado, gabarito, explicação ou outro) e texto livre.
+  - `POST /quizzes/:id/questions/:position/report`, tabela `question_reports` e tela `/painel/contestacoes`, com aviso para `SUPPORT_EMAIL`.
+  - **Em aberto:**
+    - a contestação mexe na nota? Proposta: não;
+    - o cliente recebe retorno por e-mail ao resolver?
+    - o parceiro autor vê as contestações?
 
 ## Backlog (sem prioridade definida)
 
