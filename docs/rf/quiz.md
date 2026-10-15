@@ -334,6 +334,37 @@ Mostra a evolução do desempenho do próprio cliente **ao longo do tempo** (agr
 
 ---
 
+## QUIZ-RF-011 — Contestar uma questão
+
+**Prioridade:** Importante (pós-MVP, entregue em 2026-10-15).
+**Atores:** Cliente (contesta), Administrador (resolve), Parceiro autor (é avisado).
+
+**Descrição:**
+Quem recebeu uma questão num quiz aponta um problema no enunciado, no gabarito ou na explicação. A equipe analisa, corrige a pergunta pelo editor de sempre (se for o caso) e responde ao cliente por e-mail. O parceiro autor fica sabendo que a pergunta está em análise. A contestação **não altera nota nenhuma** (ADR-0049).
+
+> ✅ **Status de implementação (2026-10-15):** tabela `question_reports` (migration `0029`), `ReportQuestionUseCase`/`ResolveQuestionReportsUseCase`/`ListReportedQuestionsUseCase` em `api/src/application/quiz/`, rotas em `quizzes.routes.ts` e `admin-question-reports.routes.ts`. Web: "Reportar problema" em `/quiz/:id` e na revisão do resultado; tela `/painel/contestacoes` com contador no menu; selo "Em análise" e números no painel do parceiro; medidor no detalhe de usuário parceiro do admin.
+
+**Critérios de aceitação:**
+- **CA-1:** `POST /quizzes/:id/questions/:position/report` com `{ reason, message }`. `reason` ∈ `statement` (enunciado), `answer_key` (gabarito), `explanation` (explicação), `other`; `message` de 10 a 1000 caracteres.
+- **CA-2:** Só o dono do quiz contesta; quiz de outro cliente responde 404, como em QUIZ-RF-005. Vale durante o quiz e depois dele, e **não exige assinatura ativa** (rever quizzes antigos segue liberado, QUIZ-RF-009 CA-2).
+- **CA-3:** Cada contestação nova avisa a equipe por e-mail (`SUPPORT_EMAIL`), com quem contestou, o motivo, a mensagem e o link do painel.
+- **CA-4:** Na **primeira** contestação aberta de uma pergunta cujo autor é parceiro, o autor recebe um e-mail curto dizendo que a pergunta está sendo analisada pela administração, **com o enunciado da pergunta** e o link para ela. Não identifica o cliente nem repete a mensagem dele. Enquanto houver contestação aberta, a pergunta aparece com o selo "Em análise" na lista e no detalhe do parceiro.
+- **CA-5:** Um cliente tem no máximo **uma contestação aberta por pergunta** (a mesma pergunta volta em outros quizzes). Resolvida, ele pode contestar de novo.
+- **CA-6:** A contestação guarda a questão do quiz (`quiz_session_question_id`), e portanto o que o cliente viu (snapshot de QUIZ-RF-001 CA-5), e a pergunta (`question_id`) denormalizada.
+- **CA-7:** `GET /admin/question-reports?status=open|resolved` lista **por pergunta**: a versão atual, o autor e as contestações do filtro, cada uma com o que o cliente viu. Abertas em ordem da contestação mais antiga; resolvidas da resolução mais recente. O `total` de abertas alimenta o contador do menu do painel.
+- **CA-8:** `POST /admin/question-reports/:question_id/resolve` com `{ resolution: corrected|dismissed, note }` (`note` de 10 a 1000) resolve **todas** as abertas da pergunta de uma vez, com o mesmo resultado e a mesma nota. Entrada em `audit_log` com `action=resolve_question_reports`. A correção da pergunta em si é feita antes, pelo editor (CONT-RF-011).
+- **CA-9:** Cada cliente que contestou recebe por e-mail o resultado ("corrigida" ou "mantida"), a nota do admin e o aviso de que o resultado dos quizzes já feitos não muda. O e-mail cita o enunciado que o cliente viu.
+- **CA-10:** Medidor do autor: número de **perguntas distintas** dele corrigidas após contestação (`resolution=corrected`) e em análise agora. Aparece no painel do parceiro (PART-RF-008) e no detalhe de usuário parceiro do admin (PROF-RF-014). Edições que o admin faz por conta própria não contam.
+- **CA-11:** Os e-mails são best-effort: falha no envio não desfaz nem derruba a contestação ou a resolução.
+
+**Erros previstos:**
+- **E-1:** Quiz inexistente ou de outro cliente → HTTP 404 `quiz_not_found`; posição fora do quiz → HTTP 422 `quiz_position_out_of_range`.
+- **E-2:** Contestação aberta do mesmo cliente para a mesma pergunta → HTTP 409 `question_already_reported`.
+- **E-3:** `reason` inválido, `message` ou `note` fora do tamanho → HTTP 422.
+- **E-4:** Resolver pergunta sem contestação aberta → HTTP 409 `no_open_question_reports`.
+
+---
+
 ## Pendências deste módulo — resolvidas em 2026-05-28
 
 - ✅ **QUIZ-P-02 — Pause/resume.** Decidido **manter sem pause no MVP**. Em troca, a assimetria de estatísticas foi formalizada (QUIZ-RF-001 CA-6, QUIZ-RF-004 CA-4): quiz `abandoned` preserva apenas respostas efetivamente submetidas; questões não respondidas **não contam como erro**. Quiz sem atividade por 24h vira `abandoned` automaticamente. Reavaliar pause/resume se o uso do simulado TAP (50 questões) mostrar fricção.

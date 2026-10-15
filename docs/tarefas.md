@@ -769,14 +769,22 @@
     - O cartão "Zona de risco" virou uma linha discreta no rodapé. O diálogo com senha continua igual.
   - **Testes:** `web` com typecheck limpo e **223** testes passando.
   - **Detalhe de teste:** `answer-quiz-page.test.tsx` passou a usar `createMemoryRouter`, porque `useBlocker` exige roteador de dados. O arquivo também faz um stub de `Request` que descarta o `signal`, pela incompatibilidade entre o `AbortSignal` do jsdom e o `Request` do Node.
-- [ ] **Contestação de questão pelo cliente** (nova RF em `rf/quiz.md`; `api` + `web`).
-  - Botão "Reportar problema" na questão durante o quiz e na revisão do resultado.
-  - Motivo (enunciado, gabarito, explicação ou outro) e texto livre.
-  - `POST /quizzes/:id/questions/:position/report`, tabela `question_reports` e tela `/painel/contestacoes`, com aviso para `SUPPORT_EMAIL`.
-  - **Em aberto:**
-    - a contestação mexe na nota? Proposta: não;
-    - o cliente recebe retorno por e-mail ao resolver?
-    - o parceiro autor vê as contestações?
+- [x] 2026-10-15 — **Contestação de questão pelo cliente** (QUIZ-RF-011, ADR-0049; `api` + `web`).
+  - **Decisões do usuário:** a nota não muda (ADR-0049); o cliente recebe a resolução por e-mail; o parceiro autor é avisado na primeira contestação aberta, com o enunciado da pergunta, e ganha um medidor de perguntas corrigidas após contestação.
+  - **API:**
+    - Migration `0029_question_reports`: tabela com índice único parcial (uma aberta por cliente e pergunta).
+    - `POST /quizzes/:id/questions/:position/report` (sem exigir assinatura), `GET /admin/question-reports` (por pergunta) e `POST /admin/question-reports/:question_id/resolve` (todas as abertas de uma vez).
+    - E-mails novos: `sendQuestionReportedToSupport`, `sendQuestionUnderReview` e `sendQuestionReportResolved`, todos best-effort.
+    - `under_admin_review` na lista e no detalhe do parceiro; `reports` no painel do parceiro; `content_reports` no detalhe de usuário do admin.
+  - **Web:**
+    - "Reportar problema" em `/quiz/:id` e na revisão do resultado; um 409 vira "já reportado".
+    - `/painel/contestacoes`, com a versão atual, o que cada cliente viu, "Editar pergunta" (o editor de sempre) e "Resolver"; contador no menu Quiz (`NavItem.badge`).
+    - Selo "Em análise" e dois números novos no painel do parceiro; cartão no detalhe de usuário parceiro.
+  - **Testes:**
+    - API: unit **350** (9 novos); e2e **247/247** (4 novos em `question-reports.test.ts`); integração **247/247**. Os dois últimos rodaram no contêiner Linux, por causa do travamento do Bun no Windows.
+    - Web: typecheck limpo, **230** testes (novos: `report-question-button`, `question-reports-page` e o contador do menu).
+    - Navegador real com a API de dev, com o suporte redirecionado para `@resend.dev`: contestar no quiz pelo celular, ver no painel, contador no menu e resolver.
+  - **Fora do escopo:** o parceiro não é avisado quando a análise termina (o selo some sozinho); não há aviso no app para o cliente, só o e-mail.
 
 ## Backlog (sem prioridade definida)
 

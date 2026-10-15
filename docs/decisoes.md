@@ -450,3 +450,14 @@ A ponte entre os dois mundos é o `external_reference` — gravamos nele o id da
 **Consequências:**
 - O webhook e o adapter continuam com um caminho só (API de Orders), como na ADR-0040.
 - Se o saldo voltar a ser pedido, a porta de entrada é o fluxo hospedado descrito no contexto, com o custo de um segundo caminho no webhook, no reembolso e nos testes de sandbox. A migration é reversível acrescentando o valor ao enum.
+
+## 0049 — Contestação de questão não altera a nota (2026-10-15)
+
+**Contexto:** com a contestação de questão (QUIZ-RF-011), surgiu a dúvida de recalcular o resultado de quem respondeu uma pergunta que depois foi corrigida. A nota de um quiz vive em três lugares: o snapshot da pergunta em `quiz_session_questions` (`correct_index_snapshot`, `is_correct`), que é imutável de propósito (QUIZ-RF-001 CA-5); os contadores da sessão (`correct_count`); e o agregado `user_subject_stats`. Recalcular exigiria reescrever os três para todos os quizzes que tiveram a pergunta, e decidir o que fazer quando a correção muda o enunciado, e não só o gabarito.
+
+**Decisão:** a contestação **não altera nota nenhuma**: nem o resultado do quiz, nem o desempenho, nem o histórico. A correção vale para os próximos quizzes. O e-mail de resolução diz isso ao cliente com todas as letras.
+
+**Consequências:**
+- Para quem já fez muitos quizzes, o efeito de uma questão no aproveitamento é de décimos. O custo e o risco de reescrever histórico não se pagam.
+- A revisão de um quiz antigo continua mostrando a versão que o cliente respondeu, inclusive o gabarito antigo. É o mesmo comportamento de qualquer edição de pergunta.
+- Se um dia a correção retroativa for pedida, o caminho é um job que recalcule `is_correct` a partir do novo gabarito, só para correções de gabarito, e reconstrua `correct_count` e `user_subject_stats`.
