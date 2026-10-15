@@ -356,12 +356,14 @@ Quem recebeu uma questão num quiz aponta um problema no enunciado, no gabarito 
 - **CA-9:** Cada cliente que contestou recebe por e-mail o resultado ("corrigida" ou "mantida"), a nota do admin e o aviso de que o resultado dos quizzes já feitos não muda. O e-mail cita o enunciado que o cliente viu.
 - **CA-10:** Medidor do autor: número de **perguntas distintas** dele corrigidas após contestação (`resolution=corrected`) e em análise agora. Aparece no painel do parceiro (PART-RF-008) e no detalhe de usuário parceiro do admin (PROF-RF-014). Edições que o admin faz por conta própria não contam.
 - **CA-11:** Os e-mails são best-effort: falha no envio não desfaz nem derruba a contestação ou a resolução.
+- **CA-12:** Só se contesta pergunta **em circulação**: publicada, com matéria e eixo ativos (o mesmo critério do sorteio). Quiz antigo pode ter pergunta que saiu do banco, por mudança de edital ou arquivamento; nela não cabe contestação. O resultado do quiz (QUIZ-RF-005) traz `reportable` por questão, e a revisão só mostra "Reportar problema" onde é `true`. Contestações já abertas de uma pergunta que depois saiu continuam podendo ser resolvidas pelo admin.
 
 **Erros previstos:**
 - **E-1:** Quiz inexistente ou de outro cliente → HTTP 404 `quiz_not_found`; posição fora do quiz → HTTP 422 `quiz_position_out_of_range`.
 - **E-2:** Contestação aberta do mesmo cliente para a mesma pergunta → HTTP 409 `question_already_reported`.
 - **E-3:** `reason` inválido, `message` ou `note` fora do tamanho → HTTP 422.
 - **E-4:** Resolver pergunta sem contestação aberta → HTTP 409 `no_open_question_reports`.
+- **E-5:** Pergunta fora de circulação (CA-12) → HTTP 409 `question_not_in_circulation`.
 
 ---
 

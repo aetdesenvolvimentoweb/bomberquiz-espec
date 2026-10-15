@@ -134,7 +134,7 @@ Fluxos de identidade apoiados no Better-Auth (ADR-0018); as rotas abaixo são a 
 | GET | `/me/performance` | sessão | QUIZ-RF-007 | Painel de desempenho (leitura liberada) |
 | POST | `/me/performance/reset` | sessão | QUIZ-RF-008 | Zera estatísticas (reautenticação) |
 | GET | `/me/performance/timeline` | sessão | QUIZ-RF-010 | Evolução mensal (`months=1..24`) |
-| POST | `/quizzes/:id/questions/:position/report` | sessão | QUIZ-RF-011 | Contesta a questão: `{ reason (statement/answer_key/explanation/other), message (10..1000) }` → 201. Não exige assinatura. 404 quiz de outro cliente; 409 `question_already_reported` (uma aberta por cliente e pergunta). |
+| POST | `/quizzes/:id/questions/:position/report` | sessão | QUIZ-RF-011 | Contesta a questão: `{ reason (statement/answer_key/explanation/other), message (10..1000) }` → 201. Não exige assinatura. 404 quiz de outro cliente; 409 `question_already_reported` (uma aberta por cliente e pergunta) ou `question_not_in_circulation` (pergunta arquivada, ou matéria/eixo arquivados). |
 | GET | `/admin/question-reports` | admin | QUIZ-RF-011 | Paginado **por pergunta** (`status=open|resolved`): versão atual, autor e as contestações com o snapshot que cada cliente viu. |
 | POST | `/admin/question-reports/:question_id/resolve` | admin | QUIZ-RF-011 | `{ resolution (corrected/dismissed), note (10..1000) }` → 200 `{ resolved }`. Resolve todas as abertas da pergunta e avisa cada cliente. 409 `no_open_question_reports`. |
 | GET | `/axes` | sessão | QUIZ-RF-001 | Lista eixos ativos (enxuto: id/name/tap_weight) — popula o seletor de `free_axis` |

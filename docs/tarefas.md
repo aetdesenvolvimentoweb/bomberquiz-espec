@@ -784,6 +784,7 @@
     - API: unit **350** (9 novos); e2e **247/247** (4 novos em `question-reports.test.ts`); integração **247/247**. Os dois últimos rodaram no contêiner Linux, por causa do travamento do Bun no Windows.
     - Web: typecheck limpo, **230** testes (novos: `report-question-button`, `question-reports-page` e o contador do menu).
     - Navegador real com a API de dev, com o suporte redirecionado para `@resend.dev`: contestar no quiz pelo celular, ver no painel, contador no menu e resolver.
+  - **Pergunta fora de circulação (CA-12, pedido do usuário):** pergunta arquivada, ou com matéria ou eixo arquivados (ex.: mudança de edital), não pode ser contestada → 409 `question_not_in_circulation`. O resultado do quiz traz `reportable` por questão, e a revisão esconde o link nessas. Mesmo critério do sorteio (`filterInCirculation` no repositório de perguntas).
   - **Fora do escopo:** o parceiro não é avisado quando a análise termina (o selo some sozinho); não há aviso no app para o cliente, só o e-mail.
 
 ## Backlog (sem prioridade definida)
