@@ -6,13 +6,13 @@ Pedido: comparar os 85 RFs de `requisitos/docs/rf/*.md` com o que realmente exis
 Legenda: ✅ implementado (API + Web) · 🟡 parcial · ❌ não implementado · 🗑️ removido de api/web (ver coluna Bot)
 
 ## Resumo
-Contagem atualizada em 2026-10-14, depois de parceiros (PROF-RF-011 a 013), cortesias, cupons, desativar/reativar conta (PROF-RF-007/008), detalhe de usuário (PROF-RF-014), purga de sessões (AUTH-RF-008) e retirada do saldo Mercado Pago (SUB-RF-003, ADR-0048). Em 2026-10-01 era 61 / 4 / 11 / 9.
+Contagem atualizada em 2026-10-14, depois de parceiros (PROF-RF-011 a 013), cortesias, cupons, desativar/reativar conta (PROF-RF-007/008), detalhe de usuário (PROF-RF-014), purga de sessões (AUTH-RF-008) e retirada do saldo Mercado Pago (SUB-RF-003, ADR-0048); em 2026-10-15, avatar (PROF-RF-005). Em 2026-10-01 era 61 / 4 / 11 / 9.
 
 | Situação | Qtde |
 |---|---|
-| ✅ Implementado | 75 |
+| ✅ Implementado | 76 |
 | 🟡 Parcial | 0 |
-| ❌ Não implementado | 1 |
+| ❌ Não implementado | 0 |
 | 🗑️ Removido (Módulo 7, coberto parcialmente pelo bot) | 9 |
 | **Total** | **85** |
 
@@ -121,7 +121,7 @@ Retirado de produção em 2026-07-27 (ADR-0039). Nenhum resquício em `api/src` 
 | AIGEN-RF-005 | Editar gerada | 🗑️ | ✅ `question-edit-dialog` |
 | AIGEN-RF-006 | Aprovar individual | 🗑️ | ✅ Publica via `POST /admin/questions` (com opção de rascunho) |
 | AIGEN-RF-007 | Descartar individual | 🗑️ | ✅ Remove localmente |
-| AIGEN-RF-008 | Lote | 🗑️ | 🟡 Só "aprovar todas"; **não há descarte em lote** |
+| AIGEN-RF-008 | Lote | 🗑️ | ✅ Seleção + aprovar/descartar selecionadas ou todas, com atalho para as possíveis duplicatas (2026-10-15) |
 | AIGEN-RF-009 | Excluir job | 🗑️ | Não se aplica |
 
 ## Divergências encontradas na documentação
